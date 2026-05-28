@@ -43,6 +43,11 @@ type Conversation = {
   messages: Message[]
 }
 
+type AiChatMessage = {
+  role: 'system' | 'user' | 'assistant'
+  content: string
+}
+
 const recipients: {
   id: RecipientId
   name: string
@@ -203,16 +208,23 @@ const friendReplies: Record<Exclude<RecipientId, 'expedia'>, string[]> = {
   ],
 }
 
+const friendPersonaPrompts: Record<Exclude<RecipientId, 'expedia'>, string> = {
+  alex:
+    'You are timhuang0630, the user\'s real friend inside a short-video chat app. Reply in concise English only. Sound casual, warm, and human. Keep the tone like a friend chatting about travel and weekend plans, not a travel agent. It is fine to ask one light follow-up question sometimes. Keep replies to 1 to 4 short sentences and avoid markdown.',
+  mia:
+    'You are Mia Park, the user\'s real friend inside a short-video chat app. Reply in concise English only. Sound friendly, relaxed, and a little thoughtful. Keep the tone like a travel buddy discussing ideas, not a business or assistant. Keep replies to 1 to 4 short sentences and avoid markdown.',
+}
+
 const expediaFeedWelcomeMessage = '✈️ Welcome to Expedia Trip Matching 🏝️'
 
 const expediaWelcomeMessage =
   '✈️ Welcome to Expedia Trip Matching 🏝️\nSend us your favorite travel Vedio. We’ll turn it into a travel plan with itinerary ideas + hotel & flight picks. Simply reply to personalize the experience or ask questions.'
 
 const expediaTravelBriefMessage =
-  '【Your Exclusive Bora Bora Getaway · Travel Brief】\nDestination Overview:\nIa Ora Na! Welcome to your dream "Quietcatıon" in Bora Bora, a jewel of French Polynesia. Famous for its stunning turquoise lagoons and luxurious overwater bungalows, this is the ultimate paradise for relaxation and reset. Transportation involves flying into Bora Bora Airport (BOB), from where you\'ll take a scenic boat shuttle to your resort. For accommodation, options like The Westin Bora Bora Resort offer the quintessential overwater living experience. The best time to visit for perfect weather is from May to October.'
+  '【Your Exclusive Jurassic Adventure · Travel Brief】\nDestination Overview:\nAloha, and welcome to Kualoa Ranch on Oahu, Hawaii, the real-life filming location for "Jurassic Park." This destination combines the iconic valleys and jungle backdrops seen in the film with some of the island\'s most spectacular natural scenery. For transportation, travelers can fly into Honolulu International Airport (HNL) and reach the ranch in about one hour by rental car from the airport or the Waikiki area. For accommodations, staying in Waikiki is highly recommended thanks to its wide range of hotels, restaurants, shopping, and convenient access to the rest of Oahu.'
 
 const expediaItineraryMessage =
-  'Suggested Itinerary:\nDay 1: Arrival & Resort Bliss\nArrive in paradise and check into your overwater bungalow. Spend the day exploring the resort\'s amenities and conclude with a romantic sunset dinner on your private deck.\nDay 2: Underwater Wonders & Relaxation\nStart your morning snorkeling in the crystal-clear lagoon, discovering vibrant coral gardens and colorful fish. In the afternoon, indulge in a rejuvenating spa treatment.\nDay 3: Lagoon Adventures\nEmbark on a lagoon excursion to swim with majestic manta rays. Enjoy a delicious lunch at a scenic beachside spot.\nDay 4: Mountain Vistas & Starry Nights\nChallenge yourself with a hike up Mount Otemanu for breathtaking panoramic views of the island. As night falls, enjoy an evening of serene stargazing.\nDay 5: Polynesian Farewell\nSavor one last day on the pristine beaches. In the evening, immerse yourself in local culture with a spectacular farewell Polynesian dinner show before your departure.'
+  'Suggested Itinerary:\nDay 1: Arrival & Acclimation\nArrive on Oahu and check into your hotel in Waikiki. Spend the afternoon unwinding on Waikiki Beach, enjoying the Hawaiian sun and sea breeze, then head out for a relaxed dinner featuring local island flavors.\nDay 2: Core Jurassic Exploration\nSet aside the full day for Kualoa Ranch. In the morning, join the Hollywood Movie Tour for a guided ride into the famous valley landscapes featured in "Jurassic Park." In the afternoon, the ATV or UTV tour is a standout experience, giving you the chance to explore the dramatic Ka\'a\'awa Valley with an adventurous, cinematic feel.\nDay 3: Farewell Journey\nOn your final morning, choose between a visit to the Pearl Harbor Historic Sites or a hike up Diamond Head for sweeping views across the Waikiki coastline. In the afternoon, return to the airport and wrap up an unforgettable Oahu getaway inspired by one of cinema\'s most iconic adventure settings.'
 
 const isExpediaScriptMessage = (content: string) =>
   content === expediaFeedWelcomeMessage ||
@@ -239,6 +251,15 @@ const splitBusinessParagraphs = (line: string) => {
 
   return paragraphs
 }
+
+const deepSeekApiKey = import.meta.env.VITE_DEEPSEEK_API_KEY?.trim() ?? ''
+const deepSeekApiUrl =
+  import.meta.env.VITE_DEEPSEEK_API_URL?.trim() || 'https://api.deepseek.com/chat/completions'
+const deepSeekModel = import.meta.env.VITE_DEEPSEEK_MODEL?.trim() || 'deepseek-v4-flash'
+const hasDeepSeekConfig = Boolean(deepSeekApiKey)
+
+const expediaAiPrompt =
+  'You are Expedia Trip Matching inside a short-video social app. Reply in concise English only. Be friendly and helpful. Always guide the conversation back to travel planning. Emphasize Expedia value across flights, hotels, and activities. The conversation history may already include fixed scripted messages such as the welcome, travel brief, and itinerary. Treat those fixed messages as already delivered context. Do not rewrite, replace, or contradict them unless the user explicitly asks for a recap. If the user shares the same destination video again, keep helping with that same destination rather than inventing a new place. Keep replies readable on mobile, usually 2 to 5 short sentences, and avoid markdown.'
 
 const getExpediaGuidedReply = (prompt: string) => {
   const normalized = prompt.trim().toLowerCase()
@@ -300,6 +321,96 @@ const makeTextMessage = (content: string, sender: 'me' | 'them'): Message => ({
   sender,
   content,
 })
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+
+const serializeMessageForAi = (message: Message): AiChatMessage | null => {
+  if (message.type === 'text') {
+    return {
+      role: message.sender === 'me' ? 'user' : 'assistant',
+      content: message.content,
+    }
+  }
+
+  if (message.type === 'shared-video') {
+    return {
+      role: 'user',
+      content: `The user shared a travel video about ${message.location}. Caption: ${message.caption}`,
+    }
+  }
+
+  return {
+    role: 'assistant',
+    content: `${message.intro}\nTransport: ${message.transport.join(' | ')}\nItinerary: ${message.itinerary.join(' | ')}`,
+  }
+}
+
+const getLatestSharedVideoMessage = (messages: Message[]) => {
+  const sharedMessages = messages.filter(
+    (message): message is Extract<Message, { type: 'shared-video' }> => message.type === 'shared-video',
+  )
+
+  return sharedMessages.at(-1) ?? null
+}
+
+const countMatchingSharedVideoMessages = (
+  messages: Message[],
+  target: Extract<Message, { type: 'shared-video' }> | null,
+) => {
+  if (!target) return 0
+
+  return messages.filter(
+    (message) =>
+      message.type === 'shared-video' &&
+      message.location === target.location &&
+      message.caption === target.caption,
+  ).length
+}
+
+const buildAiConversation = (
+  recipientId: RecipientId,
+  messages: Message[],
+): AiChatMessage[] => {
+  const latestSharedVideo = getLatestSharedVideoMessage(messages)
+  const destinationPrompt =
+    recipientId === 'expedia' && latestSharedVideo
+      ? ` Current trip focus: ${latestSharedVideo.location}. Shared video caption: ${latestSharedVideo.caption}. Keep the reply aligned with this same destination.`
+      : ''
+  const systemPrompt =
+    recipientId === 'expedia'
+      ? `${expediaAiPrompt}${destinationPrompt}`
+      : friendPersonaPrompts[recipientId]
+
+  const history = messages
+    .slice(-10)
+    .map(serializeMessageForAi)
+    .filter((message): message is AiChatMessage => Boolean(message))
+
+  return [{ role: 'system', content: systemPrompt }, ...history]
+}
+
+const getFallbackFriendReply = (
+  recipientId: Exclude<RecipientId, 'expedia'>,
+  messages: Message[],
+) => {
+  const replyPool = friendReplies[recipientId]
+  const themCount = messages.filter(
+    (message) => message.type === 'text' && message.sender === 'them',
+  ).length
+
+  return replyPool[Math.max(themCount - 1, 0) % replyPool.length]
+}
+
+const hasExpediaWelcome = (messages: Message[]) =>
+  messages.some(
+    (message) =>
+      message.type === 'text' &&
+      message.sender === 'them' &&
+      (message.content === expediaFeedWelcomeMessage || message.content === expediaWelcomeMessage),
+  )
 
 function App() {
   const expediaAvatarAsset = '/media/expedia-avatar.png?v=1'
@@ -372,163 +483,257 @@ function App() {
     [conversations],
   )
 
-  const queueReply = (recipientId: RecipientId, options?: { sharedFromFeed?: boolean; prompt?: string }) => {
+  const setConversationStatus = (recipientId: RecipientId, status: Conversation['status'], subtitle: string) => {
+    setConversations((current) => ({
+      ...current,
+      [recipientId]: {
+        ...current[recipientId],
+        status,
+        subtitle,
+      },
+    }))
+  }
+
+  const appendConversationMessage = (
+    recipientId: RecipientId,
+    message: Extract<Message, { type: 'text' }>,
+    subtitle: string,
+  ) => {
+    setConversations((current) => {
+      const conversation = current[recipientId]
+
+      return {
+        ...current,
+        [recipientId]: {
+          ...conversation,
+          status: 'idle',
+          subtitle,
+          messages: [...conversation.messages, message],
+        },
+      }
+    })
+  }
+
+  const requestDeepSeekReply = async (messages: AiChatMessage[]) => {
+    if (!hasDeepSeekConfig || messages.length <= 1) return null
+
+    try {
+      const response = await fetch(deepSeekApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${deepSeekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: deepSeekModel,
+          temperature: 0.7,
+          messages,
+        }),
+      })
+
+      if (!response.ok) return null
+
+      const data = await response.json()
+      const content = data?.choices?.[0]?.message?.content
+
+      return typeof content === 'string' && content.trim() ? content.trim() : null
+    } catch {
+      return null
+    }
+  }
+
+  const queueAiReply = async (
+    recipientId: RecipientId,
+    historyMessages: Message[],
+    prompt: string,
+  ) => {
+    await sleep(500)
+    setConversationStatus(recipientId, 'typing', 'Typing...')
+
+    const startedAt = Date.now()
+    const aiReply = await requestDeepSeekReply(buildAiConversation(recipientId, historyMessages))
+    const fallbackReply =
+      recipientId === 'expedia'
+        ? getExpediaGuidedReply(prompt)
+        : getFallbackFriendReply(recipientId, historyMessages)
+    const nextReply = aiReply ?? fallbackReply
+    const elapsed = Date.now() - startedAt
+
+    await sleep(Math.max(1200 - elapsed, 250))
+
+    appendConversationMessage(
+      recipientId,
+      makeTextMessage(nextReply, 'them') as Extract<Message, { type: 'text' }>,
+      recipientId === 'expedia'
+        ? aiReply
+          ? 'AI trip support'
+          : 'Expedia trip support'
+        : nextReply,
+    )
+  }
+
+  const queueReply = (
+    recipientId: RecipientId,
+    options?: { sharedFromFeed?: boolean; prompt?: string; historyMessages?: Message[] },
+  ) => {
     if (recipientId === 'expedia') {
-      const guidedReply = options?.sharedFromFeed ? null : getExpediaGuidedReply(options?.prompt ?? '')
-
-      window.setTimeout(() => {
-        setConversations((current) => ({
-          ...current,
-          [recipientId]: {
-            ...current[recipientId],
-            status: 'typing',
-            subtitle: 'Typing...',
-          },
-        }))
-      }, 500)
-
-      window.setTimeout(() => {
-        setConversations((current) => {
-          const conversation = current[recipientId]
-          const welcomeMessage = makeTextMessage(
-            options?.sharedFromFeed ? expediaFeedWelcomeMessage : expediaWelcomeMessage,
-            'them',
-          )
-
-          return {
-            ...current,
-            [recipientId]: {
-              ...conversation,
-              status: 'idle',
-              subtitle: '✈️ Welcome to Expedia Trip Matching 🏝️',
-              messages: [...conversation.messages, welcomeMessage],
-            },
-          }
-        })
-      }, 1800)
+      const historyMessages = options?.historyMessages ?? conversations[recipientId].messages
+      const shouldSendWelcome = !hasExpediaWelcome(historyMessages)
+      const latestSharedVideo = getLatestSharedVideoMessage(historyMessages)
+      const matchingShareCount = countMatchingSharedVideoMessages(historyMessages, latestSharedVideo)
+      const shouldUseFixedShareScript = options?.sharedFromFeed && matchingShareCount === 1
+      const repeatedSharePrompt =
+        latestSharedVideo &&
+        `The user shared the same ${latestSharedVideo.location} video again. Continue helping with this exact destination and keep the advice aligned with the existing itinerary for ${latestSharedVideo.location}.`
 
       if (options?.sharedFromFeed) {
+        if (shouldUseFixedShareScript && shouldSendWelcome) {
+          window.setTimeout(() => {
+            setConversationStatus(recipientId, 'typing', 'Typing...')
+          }, 500)
+
+          window.setTimeout(() => {
+            setConversations((current) => {
+              const conversation = current[recipientId]
+              const welcomeMessage = makeTextMessage(expediaFeedWelcomeMessage, 'them')
+
+              return {
+                ...current,
+                [recipientId]: {
+                  ...conversation,
+                  status: 'idle',
+                  subtitle: '✈️ Welcome to Expedia Trip Matching 🏝️',
+                  messages: [...conversation.messages, welcomeMessage],
+                },
+              }
+            })
+          }, 1800)
+
+          window.setTimeout(() => {
+            setConversationStatus(recipientId, 'typing', 'Typing...')
+          }, 3000)
+
+          window.setTimeout(() => {
+            setConversations((current) => {
+              const conversation = current[recipientId]
+              const travelBriefMessage = makeTextMessage(expediaTravelBriefMessage, 'them')
+
+              return {
+                ...current,
+                [recipientId]: {
+                  ...conversation,
+                  status: 'idle',
+                  subtitle: 'Destination Overview',
+                  messages: [...conversation.messages, travelBriefMessage],
+                },
+              }
+            })
+          }, 4600)
+
+          window.setTimeout(() => {
+            setConversationStatus(recipientId, 'typing', 'Typing...')
+          }, 6200)
+
+          window.setTimeout(() => {
+            setConversations((current) => {
+              const conversation = current[recipientId]
+              const itineraryMessage = makeTextMessage(expediaItineraryMessage, 'them')
+
+              return {
+                ...current,
+                [recipientId]: {
+                  ...conversation,
+                  status: 'idle',
+                  subtitle: 'Suggested Itinerary',
+                  messages: [...conversation.messages, itineraryMessage],
+                },
+              }
+            })
+          }, 7800)
+        } else if (shouldUseFixedShareScript) {
+          window.setTimeout(() => {
+            setConversationStatus(recipientId, 'typing', 'Typing...')
+          }, 500)
+
+          window.setTimeout(() => {
+            setConversations((current) => {
+              const conversation = current[recipientId]
+              const travelBriefMessage = makeTextMessage(expediaTravelBriefMessage, 'them')
+
+              return {
+                ...current,
+                [recipientId]: {
+                  ...conversation,
+                  status: 'idle',
+                  subtitle: 'Destination Overview',
+                  messages: [...conversation.messages, travelBriefMessage],
+                },
+              }
+            })
+          }, 2100)
+
+          window.setTimeout(() => {
+            setConversationStatus(recipientId, 'typing', 'Typing...')
+          }, 3400)
+
+          window.setTimeout(() => {
+            setConversations((current) => {
+              const conversation = current[recipientId]
+              const itineraryMessage = makeTextMessage(expediaItineraryMessage, 'them')
+
+              return {
+                ...current,
+                [recipientId]: {
+                  ...conversation,
+                  status: 'idle',
+                  subtitle: 'Suggested Itinerary',
+                  messages: [...conversation.messages, itineraryMessage],
+                },
+              }
+            })
+          }, 5000)
+        } else if (options.historyMessages) {
+          void queueAiReply(
+            recipientId,
+            options.historyMessages,
+            options.prompt?.trim() || repeatedSharePrompt || 'Help with this shared destination.',
+          )
+        }
+
+        return
+      }
+
+      if (shouldSendWelcome) {
         window.setTimeout(() => {
-          setConversations((current) => ({
-            ...current,
-            [recipientId]: {
-              ...current[recipientId],
-              status: 'typing',
-              subtitle: 'Typing...',
-            },
-          }))
-        }, 3000)
+          setConversationStatus(recipientId, 'typing', 'Typing...')
+        }, 500)
 
         window.setTimeout(() => {
           setConversations((current) => {
             const conversation = current[recipientId]
-            const travelBriefMessage = makeTextMessage(expediaTravelBriefMessage, 'them')
+            const welcomeMessage = makeTextMessage(expediaWelcomeMessage, 'them')
 
             return {
               ...current,
               [recipientId]: {
                 ...conversation,
                 status: 'idle',
-                subtitle: 'Destination Overview',
-                messages: [...conversation.messages, travelBriefMessage],
+                subtitle: '✈️ Welcome to Expedia Trip Matching 🏝️',
+                messages: [...conversation.messages, welcomeMessage],
               },
             }
           })
-        }, 4600)
-
-        window.setTimeout(() => {
-          setConversations((current) => ({
-            ...current,
-            [recipientId]: {
-              ...current[recipientId],
-              status: 'typing',
-              subtitle: 'Typing...',
-            },
-          }))
-        }, 6200)
-
-        window.setTimeout(() => {
-          setConversations((current) => {
-            const conversation = current[recipientId]
-            const itineraryMessage = makeTextMessage(expediaItineraryMessage, 'them')
-
-            return {
-              ...current,
-              [recipientId]: {
-                ...conversation,
-                status: 'idle',
-                subtitle: 'Suggested Itinerary',
-                messages: [...conversation.messages, itineraryMessage],
-              },
-            }
-          })
-        }, 7800)
-      } else if (guidedReply) {
-        window.setTimeout(() => {
-          setConversations((current) => ({
-            ...current,
-            [recipientId]: {
-              ...current[recipientId],
-              status: 'typing',
-              subtitle: 'Typing...',
-            },
-          }))
-        }, 3200)
-
-        window.setTimeout(() => {
-          setConversations((current) => {
-            const conversation = current[recipientId]
-            const nextMessage = makeTextMessage(guidedReply, 'them')
-
-            return {
-              ...current,
-              [recipientId]: {
-                ...conversation,
-                status: 'idle',
-                subtitle: 'Expedia trip support',
-                messages: [...conversation.messages, nextMessage],
-              },
-            }
-          })
-        }, 4800)
+        }, 1800)
+      } else if (options?.prompt?.trim() && options.historyMessages) {
+        void queueAiReply(recipientId, options.historyMessages, options.prompt)
       }
 
       return
     }
 
-    window.setTimeout(() => {
-      setConversations((current) => ({
-        ...current,
-        [recipientId]: {
-          ...current[recipientId],
-          status: 'typing',
-          subtitle: 'Typing...',
-        },
-      }))
-    }, 700)
-
-    window.setTimeout(() => {
-      setConversations((current) => {
-        const conversation = current[recipientId]
-        const nextMessage = makeTextMessage(
-          friendReplies[recipientId][
-            (conversation.messages.filter((message) => message.sender === 'them').length - 1) %
-              friendReplies[recipientId].length
-          ],
-          'them',
-        ) as Extract<Message, { type: 'text' }>
-
-        return {
-          ...current,
-          [recipientId]: {
-            ...conversation,
-            status: 'idle',
-            subtitle: nextMessage.content,
-            messages: [...conversation.messages, nextMessage],
-          },
-        }
-      })
-    }, 1800)
+    if (options?.historyMessages) {
+      void queueAiReply(recipientId, options.historyMessages, options?.prompt ?? '')
+    }
   }
 
   const handleSendFromFeed = () => {
@@ -558,13 +763,18 @@ function App() {
         ? 'How can I get there?'
         : 'Would you go here?',
     )
-    queueReply(selectedRecipientId, { sharedFromFeed: selectedRecipientId === 'expedia' })
+    queueReply(selectedRecipientId, {
+      sharedFromFeed: selectedRecipientId === 'expedia',
+      prompt: shareDraft.trim(),
+      historyMessages: nextMessages,
+    })
   }
 
   const handleSendFromChat = () => {
     if (!chatDraft.trim()) return
 
     const content = chatDraft.trim()
+    const nextMessages = [...conversations[activeConversationId].messages, makeTextMessage(content, 'me')]
     setChatDraft('')
     setConversations((current) => ({
       ...current,
@@ -572,10 +782,10 @@ function App() {
         ...current[activeConversationId],
         status: 'sending',
         subtitle: 'Sending...',
-        messages: [...current[activeConversationId].messages, makeTextMessage(content, 'me')],
+        messages: nextMessages,
       },
     }))
-    queueReply(activeConversationId, { prompt: content })
+    queueReply(activeConversationId, { prompt: content, historyMessages: nextMessages })
   }
 
   const isDarkChrome = screen === 'feed' || screen === 'friends'

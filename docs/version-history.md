@@ -1,5 +1,33 @@
 # Version History
 
+## V1.1
+
+- Status: `Current`
+- Date: `2026-05-28`
+- Label: `AI Context And Jurassic Script Refresh`
+
+### Scope
+
+- Added frontend DeepSeek integration through `VITE_DEEPSEEK_*` environment variables without hardcoding secrets
+- Kept Expedia welcome messaging fixed while moving later freeform replies onto AI with recent message history as context
+- Added AI persona prompts for friend chats so `timhuang0630` and `Mia Park` stay conversational and human
+- Updated Expedia logic so the welcome message appears only once per conversation
+- Refined repeated share behavior so the first share of the current video uses the fixed script and later shares of the same video switch to AI while staying on the same destination
+- Replaced the fixed Expedia destination copy with the new `Jurassic Adventure` travel brief and itinerary for `Kualoa Ranch / Oahu`
+- Added `.env.example` and updated deployment documentation for Tencent Cloud static hosting
+
+### Notes
+
+- This version is the current handoff baseline after AI-assisted chat behavior and scripted destination copy were aligned
+- The Expedia scripted flow still takes priority on the first qualifying feed-share event before AI takes over later conversation turns
+- Environment variables are required in deployment if AI replies should be enabled online
+
+### Next Phase Candidates
+
+- Improve auto-scroll and typing rhythm to feel closer to native chat behavior
+- Expand destination handling so different feed videos can map to different fixed script packages
+- Consider a server-side proxy if AI key handling needs to move beyond demo-grade frontend access
+
 ## V1.0
 
 - Status: `Baseline`
