@@ -94,6 +94,8 @@ const quickMessages = [
 ]
 
 const reactionEmojis = ['🥰', '👍', '😂', '😎', '🥺', '🙏']
+const feedVideoAsset = '/media/feed-video-faststart.mp4'
+const feedVideoPosterAsset = '/media/feed-video-frame.png'
 
 const feedContent = {
   title: 'WELCOME TO JURASSIC PARK',
@@ -420,9 +422,9 @@ function App() {
   const [sharedVideoPreviewSrc, setSharedVideoPreviewSrc] = useState<string | null>(null)
   const [feedPosterSrc, setFeedPosterSrc] = useState<string | null>(() => {
     try {
-      return window.localStorage.getItem('feedVideoFirstFrame')
+      return window.localStorage.getItem('feedVideoFirstFrame') || feedVideoPosterAsset
     } catch {
-      return null
+      return feedVideoPosterAsset
     }
   })
   const [expediaAvatarSrc, setExpediaAvatarSrc] = useState<string | null>(expediaAvatarAsset)
@@ -901,20 +903,21 @@ function App() {
               <div className="feed-screen">
                 {!hasVideoError ? (
                   <>
-                    {feedPosterSrc ? (
+                    {feedPosterSrc && (
                       <img
                         className={`poster-media feed-fallback-frame ${isFeedVideoReady ? 'is-hidden' : ''}`}
                         src={feedPosterSrc}
                         alt="Kualoa Ranch video first frame"
                       />
-                    ) : (
-                      <div
-                        className={`poster-media video-loading-state ${isFeedVideoReady ? 'is-hidden' : ''}`}
-                        aria-hidden="true"
-                      >
-                        <span className="video-loading-spinner" />
-                      </div>
                     )}
+                    <div
+                      className={`poster-media video-loading-state ${feedPosterSrc ? 'has-poster' : ''} ${
+                        isFeedVideoReady ? 'is-hidden' : ''
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span className="video-loading-spinner" />
+                    </div>
                     <video
                       ref={(node) => {
                         feedVideoRef.current = node
@@ -930,7 +933,7 @@ function App() {
                       loop
                       playsInline
                       preload="auto"
-                      poster={feedPosterSrc ?? undefined}
+                      poster={feedPosterSrc ?? feedVideoPosterAsset}
                       onError={() => setHasVideoError(true)}
                       onLoadedData={(event) => {
                         captureSharedVideoFrame(event.currentTarget)
@@ -943,7 +946,7 @@ function App() {
                         })
                       }}
                     >
-                      <source src="/media/feed-video.mp4" type="video/mp4" />
+                      <source src={feedVideoAsset} type="video/mp4" />
                     </video>
                   </>
                 ) : (
@@ -1354,7 +1357,7 @@ function App() {
                               )
                             ) : (
                               sharedVideoPreviewSrc || feedPosterSrc ? (
-                                <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? ''} alt={message.location} />
+                                <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? feedVideoPosterAsset} alt={message.location} />
                               ) : (
                                 <div className="business-shared-placeholder" aria-hidden="true" />
                               )
@@ -1680,7 +1683,7 @@ function App() {
                             ) : (
                               <div className="shared-card compact">
                                 {sharedVideoPreviewSrc || feedPosterSrc ? (
-                                  <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? ''} alt={message.location} />
+                                  <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? feedVideoPosterAsset} alt={message.location} />
                                 ) : (
                                   <div className="business-shared-placeholder" aria-hidden="true" />
                                 )}

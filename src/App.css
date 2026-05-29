@@ -138,6 +138,11 @@
   transition: opacity 0.18s ease;
 }
 
+.video-loading-state.has-poster {
+  background: linear-gradient(180deg, rgba(4, 11, 28, 0.12) 0%, rgba(4, 11, 28, 0.26) 100%);
+  backdrop-filter: blur(1px);
+}
+
 .video-loading-state.is-error {
   background: linear-gradient(180deg, #081631 0%, #061024 100%);
 }
