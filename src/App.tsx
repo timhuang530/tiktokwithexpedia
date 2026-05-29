@@ -3,7 +3,30 @@ import cathyAvatar from './assets/cathy-avatar.svg'
 import './App.css'
 
 type RecipientId = 'expedia' | 'alex' | 'mia'
-type Screen = 'feed' | 'friends' | 'inbox' | 'chat' | 'profile'
+type Screen =
+  | 'feed'
+  | 'friends'
+  | 'inbox'
+  | 'chat'
+  | 'profile'
+  | 'hotel-detail'
+  | 'restaurant-shelf'
+  | 'restaurant-detail'
+type CommerceItem = {
+  id: string
+  kind: 'hotel' | 'restaurant'
+  label: string
+  title: string
+  location?: string
+  feature?: string
+  rating: string
+  ratingLabel: string
+  reviews: string
+  note?: string
+  cta: string
+  image: string
+  imagePosition?: string
+}
 
 type Message =
   | {
@@ -29,6 +52,19 @@ type Message =
       stays: { name: string; detail: string; cta: string }[]
       flights: { route: string; detail: string; cta: string }[]
     }
+  | {
+      id: string
+      type: 'commerce-group'
+      sender: 'them'
+      title: string
+      subtitle: string
+      items: CommerceItem[]
+    }
+
+type IncomingMessage =
+  | (Extract<Message, { type: 'text' }> & { sender: 'them' })
+  | Extract<Message, { type: 'plan' }>
+  | Extract<Message, { type: 'commerce-group' }>
 
 type Conversation = {
   recipientId: RecipientId
@@ -231,6 +267,106 @@ const expediaTravelBriefMessage =
 const expediaItineraryMessage =
   'Suggested Itinerary:\nDay 1: Arrival & Acclimation\nArrive on Oahu and check into your hotel in Waikiki. Spend the afternoon unwinding on Waikiki Beach, enjoying the Hawaiian sun and sea breeze, then head out for a relaxed dinner featuring local island flavors.\nDay 2: Core Jurassic Exploration\nSet aside the full day for Kualoa Ranch. In the morning, join the Hollywood Movie Tour for a guided ride into the famous valley landscapes featured in "Jurassic Park." In the afternoon, the ATV or UTV tour is a standout experience, giving you the chance to explore the dramatic Ka\'a\'awa Valley with an adventurous, cinematic feel.\nDay 3: Farewell Journey\nOn your final morning, choose between a visit to the Pearl Harbor Historic Sites or a hike up Diamond Head for sweeping views across the Waikiki coastline. In the afternoon, return to the airport and wrap up an unforgettable Oahu getaway inspired by one of cinema\'s most iconic adventure settings.'
 
+const expediaCommerceItems: CommerceItem[] = [
+  {
+    id: 'oahu-hotel',
+    kind: 'hotel',
+    label: 'Stay',
+    title: 'Mauna Lani, Auberge Collection',
+    location: 'Kamuela',
+    feature: 'Pool',
+    rating: '9.4',
+    ratingLabel: 'Exceptional',
+    reviews: '1,000 reviews',
+    cta: 'Book with Expedia',
+    image: '/media/oahu-mauna-lani-hotel-photo.jpg',
+    imagePosition: 'center center',
+  },
+  {
+    id: 'oahu-restaurant',
+    kind: 'restaurant',
+    label: 'Eat',
+    title: 'Dining at Hard Rock Cafe Honolulu',
+    rating: '9.0',
+    ratingLabel: 'Wonderful',
+    reviews: '17 reviews',
+    note: 'Free cancellation available',
+    cta: 'View with Expedia',
+    image: '/media/oahu-hard-rock-honolulu-photo.jpg',
+    imagePosition: 'center center',
+  },
+]
+
+const hotelDetail = {
+  title: 'Mauna Lani, Auberge Collection',
+  eyebrow: 'Stay near Kohala Coast',
+  rating: '9.4 out of 10',
+  reviews: '1,000 verified reviews',
+  price: 'From $1,019 nightly',
+  address: '68-1400 Mauna Lani Dr, Kamuela, HI 96743',
+  summary:
+    'A polished Big Island resort with spacious rooms, resort pools, and a serene oceanfront setting that feels elevated and distinctly Hawaiian.',
+  highlights: [
+    'Contemporary island rooms with private lanai-style views',
+    'Resort pool access and a refined coastal atmosphere',
+    'Strong fit for a higher-end Hawaii stay with resort amenities',
+  ],
+  tripFit: [
+    'Best for travelers who want a more elevated resort-style stay',
+    'Works well for a slower luxury leg before or after active sightseeing',
+    'A good fit when pool time and resort downtime matter as much as excursions',
+  ],
+}
+
+const restaurantShelf = {
+  title: 'Dining at Hard Rock Cafe Honolulu',
+  eyebrow: 'Eat in Waikiki',
+  rating: '9.0 out of 10',
+  cuisine: 'American classics · Waikiki',
+  address: '280 Beach Walk, Honolulu, HI 96815',
+  summary:
+    'A lively Waikiki dining stop with iconic memorabilia, guitar-lined interiors, and crowd-pleasing burgers, drinks, and group-friendly energy.',
+}
+
+const restaurantDeals = [
+  {
+    id: 'hard-rock-burger-set',
+    badge: 'Most booked',
+    title: 'Burger Dinner Set',
+    subtitle: 'Signature burger, drink, and dessert in the main dining room',
+    price: '$40',
+    originalPrice: '$52',
+    includes: [
+      'One signature burger entree',
+      'One drink selection',
+      'One dessert add-on',
+      'Indoor dining at Hard Rock Cafe Honolulu',
+    ],
+    notes: [
+      'Includes taxes and fees per traveler',
+      'Great for a simple Waikiki dinner stop',
+      'Cancellation policy may apply depending on booking window',
+    ],
+  },
+  {
+    id: 'hard-rock-share-set',
+    badge: 'Group dining',
+    title: 'Shareable Rock Menu',
+    subtitle: 'Starters, mains, and drinks designed for a casual group meal',
+    price: '$68',
+    originalPrice: '$84',
+    includes: [
+      'Starter and shared appetizer options',
+      'Main course selections for two travelers',
+      'Two drinks included',
+    ],
+    notes: [
+      'Best for a longer sit-down meal',
+      'Works well after Waikiki shopping or beach time',
+    ],
+  },
+]
+
 const isExpediaScriptMessage = (content: string) =>
   content === expediaFeedWelcomeMessage ||
   content === expediaWelcomeMessage ||
@@ -312,7 +448,7 @@ const getExpediaGuidedReply = (prompt: string) => {
   return 'I can help turn that into a travel conversation. Share a destination, travel dates, vibe, or budget, and Expedia can help you explore flights, stays, and bookable trip options.'
 }
 
-const makeSharedVideoMessage = (): Message => ({
+const makeSharedVideoMessage = (): Extract<Message, { type: 'shared-video' }> => ({
   id: `video-${Date.now()}`,
   type: 'shared-video',
   sender: 'me',
@@ -320,7 +456,19 @@ const makeSharedVideoMessage = (): Message => ({
   location: 'Kualoa Ranch',
 })
 
-const makeTextMessage = (content: string, sender: 'me' | 'them'): Message => ({
+const makeCommerceMessage = (): Extract<Message, { type: 'commerce-group' }> => ({
+  id: `commerce-${Date.now()}`,
+  type: 'commerce-group',
+  sender: 'them',
+  title: 'Book This Trip With Expedia',
+  subtitle: 'Two Oahu picks for this itinerary.',
+  items: expediaCommerceItems,
+})
+
+const makeTextMessage = <T extends 'me' | 'them'>(
+  content: string,
+  sender: T,
+): Extract<Message, { type: 'text' }> & { sender: T } => ({
   id: `${sender}-${Date.now()}-${content.length}`,
   type: 'text',
   sender,
@@ -344,6 +492,15 @@ const serializeMessageForAi = (message: Message): AiChatMessage | null => {
     return {
       role: 'user',
       content: `The user shared a travel video about ${message.location}. Caption: ${message.caption}`,
+    }
+  }
+
+  if (message.type === 'commerce-group') {
+    return {
+      role: 'assistant',
+      content: `${message.title}\n${message.subtitle}\nRecommendations: ${message.items
+        .map((item) => `${item.label}: ${item.title}`)
+        .join(' | ')}`,
     }
   }
 
@@ -440,6 +597,7 @@ function App() {
   const [activeConversationId, setActiveConversationId] = useState<RecipientId>('expedia')
   const [shareDraft, setShareDraft] = useState('How can I get there?')
   const [chatDraft, setChatDraft] = useState('')
+  const [activeRestaurantDealId, setActiveRestaurantDealId] = useState(restaurantDeals[0].id)
   const [conversations, setConversations] =
     useState<Record<RecipientId, Conversation>>(initialConversations)
   const feedVideoRef = useRef<HTMLVideoElement | null>(null)
@@ -447,6 +605,8 @@ function App() {
   const halfMessagesRef = useRef<HTMLElement | null>(null)
 
   const activeConversation = conversations[activeConversationId]
+  const activeRestaurantDeal =
+    restaurantDeals.find((deal) => deal.id === activeRestaurantDealId) ?? restaurantDeals[0]
 
   const captureSharedVideoFrame = (video: HTMLVideoElement) => {
     if (!video.videoWidth || !video.videoHeight || sharedVideoPreviewSrc) return
@@ -546,7 +706,7 @@ function App() {
 
   const appendConversationMessage = (
     recipientId: RecipientId,
-    message: Extract<Message, { type: 'text' }>,
+    message: IncomingMessage,
     subtitle: string,
   ) => {
     setConversations((current) => {
@@ -564,6 +724,16 @@ function App() {
         },
       }
     })
+  }
+
+  const queueCommerceFollowUp = (recipientId: RecipientId, typingDelay: number, messageDelay: number) => {
+    window.setTimeout(() => {
+      setConversationStatus(recipientId, 'typing', 'Typing...')
+    }, typingDelay)
+
+    window.setTimeout(() => {
+      appendConversationMessage(recipientId, makeCommerceMessage(), 'Stay and dining picks')
+    }, messageDelay)
   }
 
   const requestDeepSeekReply = async (messages: AiChatMessage[]) => {
@@ -615,7 +785,7 @@ function App() {
 
     appendConversationMessage(
       recipientId,
-      makeTextMessage(nextReply, 'them') as Extract<Message, { type: 'text' }>,
+      makeTextMessage(nextReply, 'them'),
       recipientId === 'expedia'
         ? aiReply
           ? 'AI trip support'
@@ -647,7 +817,7 @@ function App() {
           window.setTimeout(() => {
             appendConversationMessage(
               recipientId,
-              makeTextMessage(expediaFeedWelcomeMessage, 'them') as Extract<Message, { type: 'text' }>,
+              makeTextMessage(expediaFeedWelcomeMessage, 'them'),
               '✈️ Welcome to Expedia Trip Matching 🏝️',
             )
           }, 1800)
@@ -659,7 +829,7 @@ function App() {
           window.setTimeout(() => {
             appendConversationMessage(
               recipientId,
-              makeTextMessage(expediaTravelBriefMessage, 'them') as Extract<Message, { type: 'text' }>,
+              makeTextMessage(expediaTravelBriefMessage, 'them'),
               'Destination Overview',
             )
           }, 4600)
@@ -671,10 +841,12 @@ function App() {
           window.setTimeout(() => {
             appendConversationMessage(
               recipientId,
-              makeTextMessage(expediaItineraryMessage, 'them') as Extract<Message, { type: 'text' }>,
+              makeTextMessage(expediaItineraryMessage, 'them'),
               'Suggested Itinerary',
             )
           }, 7800)
+
+          queueCommerceFollowUp(recipientId, 9300, 10900)
         } else if (shouldUseFixedShareScript) {
           window.setTimeout(() => {
             setConversationStatus(recipientId, 'typing', 'Typing...')
@@ -683,7 +855,7 @@ function App() {
           window.setTimeout(() => {
             appendConversationMessage(
               recipientId,
-              makeTextMessage(expediaTravelBriefMessage, 'them') as Extract<Message, { type: 'text' }>,
+              makeTextMessage(expediaTravelBriefMessage, 'them'),
               'Destination Overview',
             )
           }, 2100)
@@ -695,10 +867,12 @@ function App() {
           window.setTimeout(() => {
             appendConversationMessage(
               recipientId,
-              makeTextMessage(expediaItineraryMessage, 'them') as Extract<Message, { type: 'text' }>,
+              makeTextMessage(expediaItineraryMessage, 'them'),
               'Suggested Itinerary',
             )
           }, 5000)
+
+          queueCommerceFollowUp(recipientId, 6400, 8000)
         } else if (options.historyMessages) {
           void queueAiReply(
             recipientId,
@@ -718,7 +892,7 @@ function App() {
         window.setTimeout(() => {
           appendConversationMessage(
             recipientId,
-            makeTextMessage(expediaWelcomeMessage, 'them') as Extract<Message, { type: 'text' }>,
+            makeTextMessage(expediaWelcomeMessage, 'them'),
             '✈️ Welcome to Expedia Trip Matching 🏝️',
           )
         }, 1800)
@@ -786,12 +960,29 @@ function App() {
     queueReply(activeConversationId, { prompt: content, historyMessages: nextMessages })
   }
 
+  const handleOpenCommerceDestination = (item: CommerceItem) => {
+    setActiveConversationId('expedia')
+    setIsHalfPreviewOpen(false)
+    setScreen(item.kind === 'hotel' ? 'hotel-detail' : 'restaurant-shelf')
+  }
+
+  const handleOpenRestaurantDeal = (dealId: string) => {
+    setActiveRestaurantDealId(dealId)
+    setScreen('restaurant-detail')
+  }
+
+  const handleCloseCommerceDestination = () => {
+    setScreen('chat')
+  }
+
   const isDarkChrome = screen === 'feed' || screen === 'friends'
   const statusTime =
     screen === 'feed' ? '20:01' : screen === 'chat' && activeConversationId === 'expedia' ? '20:02' : '20:03'
   const isBusinessChat = activeConversationId === 'expedia'
   const batteryLevel =
     screen === 'feed' ? '68' : screen === 'chat' && activeConversationId === 'expedia' ? '69' : '70'
+  const isPrimaryTabScreen =
+    screen === 'feed' || screen === 'friends' || screen === 'inbox' || screen === 'profile'
 
   const renderRecipientAvatar = (recipientId: RecipientId | 'feed') => {
     if (recipientId === 'expedia') {
@@ -854,6 +1045,218 @@ function App() {
       </div>
     )
   }
+
+  const renderCommerceMessage = (message: Extract<Message, { type: 'commerce-group' }>) => (
+    <article key={message.id} className="message-row theirs">
+      <div className="bubble bubble-commerce">
+        <div className="commerce-message-header">
+          <span className="commerce-message-kicker">Expedia picks</span>
+          <strong>{message.title}</strong>
+          <p>{message.subtitle}</p>
+        </div>
+        <div className="commerce-card-row">
+          {message.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="commerce-card"
+              aria-label={`${item.title}. ${item.cta}`}
+              onClick={() => handleOpenCommerceDestination(item)}
+            >
+              <img
+                className="commerce-card-media"
+                src={item.image}
+                alt={item.title}
+                style={{ objectPosition: item.imagePosition ?? 'center center' }}
+              />
+              <div className="commerce-card-body">
+                <strong className="commerce-card-title">{item.title}</strong>
+                <div className="commerce-card-rating">
+                  <span className="commerce-card-score">{item.rating}</span>
+                  <span className="commerce-card-rating-copy">
+                    <strong>{item.ratingLabel}</strong>
+                    <span>{item.reviews}</span>
+                  </span>
+                </div>
+                {item.location || item.feature || item.note ? (
+                  <div className="commerce-card-meta-stack">
+                    {item.location ? <span className="commerce-card-location">{item.location}</span> : null}
+                    {item.feature ? (
+                      <span className="commerce-card-feature">
+                        <PoolAmenityIcon />
+                        <span>{item.feature}</span>
+                      </span>
+                    ) : null}
+                    {item.note ? <span className="commerce-card-note">{item.note}</span> : null}
+                  </div>
+                ) : null}
+                <span className="commerce-card-cta">{item.cta}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </article>
+  )
+
+  const renderCommerceDetailHeader = (title: string, subtitle: string, onBack: () => void) => (
+    <header className="commerce-detail-header">
+      <button type="button" className="ghost-icon" onClick={onBack} aria-label="Back">
+        <BackIcon />
+      </button>
+      <div className="commerce-detail-title">
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </div>
+      <button type="button" className="ghost-icon" aria-label="More options">
+        <ShareIcon />
+      </button>
+    </header>
+  )
+
+  const renderHotelDetailScreen = () => (
+    <div className="commerce-detail-screen">
+      {renderCommerceDetailHeader('Hotel', 'Back to Expedia chat', handleCloseCommerceDestination)}
+      <section className="commerce-detail-scroll">
+        <img className="commerce-detail-hero" src={expediaCommerceItems[0].image} alt={hotelDetail.title} />
+        <div className="commerce-detail-body">
+          <span className="commerce-page-kicker">{hotelDetail.eyebrow}</span>
+          <h2>{hotelDetail.title}</h2>
+          <div className="commerce-stat-row">
+            <span>{hotelDetail.rating}</span>
+            <span>{hotelDetail.reviews}</span>
+          </div>
+          <p className="commerce-address">{hotelDetail.address}</p>
+          <p className="commerce-summary">{hotelDetail.summary}</p>
+
+          <section className="commerce-section">
+            <h3>Why Expedia picked this stay</h3>
+            <div className="commerce-tag-list">
+              {hotelDetail.highlights.map((highlight) => (
+                <span key={highlight} className="commerce-tag">
+                  {highlight}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="commerce-section">
+            <h3>Best fit for this trip</h3>
+            <div className="commerce-info-card">
+              {hotelDetail.tripFit.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+      <div className="commerce-bottom-bar">
+        <div>
+          <span className="commerce-bottom-label">Expedia rate</span>
+          <strong>{hotelDetail.price}</strong>
+        </div>
+        <button type="button" className="commerce-primary-button">
+          Reserve
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderRestaurantShelfScreen = () => (
+    <div className="commerce-detail-screen">
+      {renderCommerceDetailHeader('Restaurant', 'Back to Expedia chat', handleCloseCommerceDestination)}
+      <section className="commerce-detail-scroll">
+        <img className="commerce-detail-hero" src={expediaCommerceItems[1].image} alt={restaurantShelf.title} />
+        <div className="commerce-detail-body">
+          <span className="commerce-page-kicker">{restaurantShelf.eyebrow}</span>
+          <h2>{restaurantShelf.title}</h2>
+          <div className="commerce-stat-row">
+            <span>{restaurantShelf.rating}</span>
+            <span>{restaurantShelf.cuisine}</span>
+          </div>
+          <p className="commerce-address">{restaurantShelf.address}</p>
+          <p className="commerce-summary">{restaurantShelf.summary}</p>
+
+          <section className="commerce-section">
+            <div className="commerce-section-heading">
+              <h3>Popular deals</h3>
+              <span>{restaurantDeals.length} offers</span>
+            </div>
+            <div className="deal-list">
+              {restaurantDeals.map((deal) => (
+                <button
+                  key={deal.id}
+                  type="button"
+                  className="deal-card"
+                  onClick={() => handleOpenRestaurantDeal(deal.id)}
+                >
+                  <span className="deal-badge">{deal.badge}</span>
+                  <strong>{deal.title}</strong>
+                  <p>{deal.subtitle}</p>
+                  <div className="deal-card-footer">
+                    <span className="deal-price-wrap">
+                      <strong>{deal.price}</strong>
+                      <span>{deal.originalPrice}</span>
+                    </span>
+                    <span className="deal-card-cta">View deal</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>
+  )
+
+  const renderRestaurantDetailScreen = () => (
+    <div className="commerce-detail-screen">
+      {renderCommerceDetailHeader("Duke's Deal", 'Back to restaurant offers', () => setScreen('restaurant-shelf'))}
+      <section className="commerce-detail-scroll">
+        <img className="commerce-detail-hero" src={expediaCommerceItems[1].image} alt={activeRestaurantDeal.title} />
+        <div className="commerce-detail-body">
+          <span className="commerce-page-kicker">{activeRestaurantDeal.badge}</span>
+          <h2>{activeRestaurantDeal.title}</h2>
+          <p className="commerce-summary">{activeRestaurantDeal.subtitle}</p>
+
+          <div className="commerce-price-card">
+            <div>
+              <span className="commerce-bottom-label">Deal price</span>
+              <strong>{activeRestaurantDeal.price}</strong>
+            </div>
+            <span className="commerce-original-price">{activeRestaurantDeal.originalPrice}</span>
+          </div>
+
+          <section className="commerce-section">
+            <h3>Includes</h3>
+            <div className="commerce-info-card">
+              {activeRestaurantDeal.includes.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </section>
+
+          <section className="commerce-section">
+            <h3>Good to know</h3>
+            <div className="commerce-info-card">
+              {activeRestaurantDeal.notes.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+      <div className="commerce-bottom-bar">
+        <div>
+          <span className="commerce-bottom-label">Ready when you are</span>
+          <strong>{activeRestaurantDeal.price}</strong>
+        </div>
+        <button type="button" className="commerce-primary-button">
+          Save offer
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <main className="demo-shell">
@@ -1266,6 +1669,12 @@ function App() {
               </div>
             )}
 
+            {screen === 'hotel-detail' && renderHotelDetailScreen()}
+
+            {screen === 'restaurant-shelf' && renderRestaurantShelfScreen()}
+
+            {screen === 'restaurant-detail' && renderRestaurantDetailScreen()}
+
             {screen === 'chat' && (
               <div className="chat-screen">
                 <header className="chat-header">
@@ -1422,26 +1831,34 @@ function App() {
                       )
                     }
 
-                    return (
-                      <article
-                        key={message.id}
-                        className={`message-row ${message.sender === 'me' ? 'mine' : 'theirs'}`}
-                      >
-                        <div
-                          className={`bubble ${
-                            message.sender === 'me' ? 'bubble-me' : 'bubble-them'
-                          } ${
-                            isBusinessChat && message.sender === 'them' && isExpediaScriptMessage(message.content)
-                              ? 'bubble-business'
-                              : ''
-                          }`}
+                    if (message.type === 'commerce-group') {
+                      return renderCommerceMessage(message)
+                    }
+
+                    if (message.type === 'text') {
+                      return (
+                        <article
+                          key={message.id}
+                          className={`message-row ${message.sender === 'me' ? 'mine' : 'theirs'}`}
                         >
-                          {isBusinessChat && message.sender === 'them' && isExpediaScriptMessage(message.content)
-                            ? renderBusinessMessageContent(message.content)
-                            : message.content}
-                        </div>
-                      </article>
-                    )
+                          <div
+                            className={`bubble ${
+                              message.sender === 'me' ? 'bubble-me' : 'bubble-them'
+                            } ${
+                              isBusinessChat && message.sender === 'them' && isExpediaScriptMessage(message.content)
+                                ? 'bubble-business'
+                                : ''
+                            }`}
+                          >
+                            {isBusinessChat && message.sender === 'them' && isExpediaScriptMessage(message.content)
+                              ? renderBusinessMessageContent(message.content)
+                              : message.content}
+                          </div>
+                        </article>
+                      )
+                    }
+
+                    return null
                   })}
 
                   {activeConversation.status === 'typing' && (
@@ -1531,7 +1948,7 @@ function App() {
               </div>
             )}
 
-            {screen !== 'chat' && (
+            {isPrimaryTabScreen && (
               <nav className="bottom-nav">
                 <button
                   type="button"
@@ -1695,30 +2112,38 @@ function App() {
                         )
                       }
 
-                      return (
-                        <article
-                          key={message.id}
-                          className={`message-row ${message.sender === 'me' ? 'mine' : 'theirs'}`}
-                        >
-                          <div
-                            className={`bubble ${
-                              message.sender === 'me' ? 'bubble-me' : 'bubble-them'
-                            } ${
-                              activeConversationId === 'expedia' &&
+                      if (message.type === 'commerce-group') {
+                        return renderCommerceMessage(message)
+                      }
+
+                      if (message.type === 'text') {
+                        return (
+                          <article
+                            key={message.id}
+                            className={`message-row ${message.sender === 'me' ? 'mine' : 'theirs'}`}
+                          >
+                            <div
+                              className={`bubble ${
+                                message.sender === 'me' ? 'bubble-me' : 'bubble-them'
+                              } ${
+                                activeConversationId === 'expedia' &&
+                                message.sender === 'them' &&
+                                isExpediaScriptMessage(message.content)
+                                  ? 'bubble-business'
+                                  : ''
+                              }`}
+                            >
+                              {activeConversationId === 'expedia' &&
                               message.sender === 'them' &&
                               isExpediaScriptMessage(message.content)
-                                ? 'bubble-business'
-                                : ''
-                            }`}
-                          >
-                            {activeConversationId === 'expedia' &&
-                            message.sender === 'them' &&
-                            isExpediaScriptMessage(message.content)
-                              ? renderBusinessMessageContent(message.content)
-                              : message.content}
-                          </div>
-                        </article>
-                      )
+                                ? renderBusinessMessageContent(message.content)
+                                : message.content}
+                            </div>
+                          </article>
+                        )
+                      }
+
+                      return null
                     })}
 
                     {activeConversation.status === 'typing' && (
@@ -1885,6 +2310,33 @@ function HeartIcon({ filled }: { filled: boolean }) {
         d="M12 21.3c-.25 0-.49-.08-.69-.23-1.2-.92-7.21-5.59-8.19-10.21C2.37 7.37 4.62 4 8.04 4c1.75 0 3.17.78 3.96 2.02C12.79 4.78 14.21 4 15.96 4c3.42 0 5.67 3.37 4.92 6.86-.98 4.62-6.99 9.29-8.19 10.21-.2.15-.44.23-.69.23Z"
         fill="currentColor"
       />
+    </svg>
+  )
+}
+
+function PoolAmenityIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M2.2 10.6c1 0 1-.6 2-.6s1 .6 2 .6 1-.6 2-.6 1 .6 2 .6 1-.6 2-.6 1 .6 2 .6"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3.2 7.8c.8 0 .8-.5 1.6-.5s.8.5 1.6.5.8-.5 1.6-.5.8.5 1.6.5.8-.5 1.6-.5.8.5 1.6.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.1 3.4 8 2l1.9 1.4"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M8 2v3.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   )
 }

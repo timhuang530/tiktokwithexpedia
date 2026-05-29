@@ -1,5 +1,58 @@
 # Version History
 
+## V1.3
+
+- Status: `Current`
+- Date: `2026-05-29`
+- Label: `Commerce Card Fidelity Pass`
+
+### Scope
+
+- Continued the TikTok Go-style commerce message iteration inside the existing Expedia business chat without changing the chat shell
+- Reworked the in-chat hotel and restaurant cards to follow the provided Instagram-style reference more closely
+- Replaced earlier placeholder-style card art with real hotel and restaurant photography aligned to the latest provided content direction
+- Updated the commerce metadata to match the latest supplied references, including hotel location / amenity details and restaurant review / cancellation copy
+- Improved vertical alignment across both cards so image area, rating block, and CTA baseline now stay visually consistent
+- Kept the existing clickable flow into hotel detail, restaurant shelf, and restaurant deal detail screens
+
+### Notes
+
+- This version becomes the new documented baseline for the commerce-message fidelity pass
+- A dedicated iteration record for this version is stored in `docs/v1.3-iteration-notes.md`
+- The current focus of `V1.3` is card quality, asset quality, spacing, hierarchy, and alignment rather than new interaction branches
+
+### Next Phase Candidates
+
+- Continue 1:1 visual tightening against the target reference for card spacing, typography, and button treatment
+- Replace the current selected local photos with final source images if exact production assets are provided
+- Apply the same fidelity pass to the hotel detail, restaurant shelf, and restaurant detail screens
+
+## V1.2
+
+- Status: `Superseded`
+- Date: `2026-05-29`
+- Label: `TikTok Go Commerce Message Expansion`
+
+### Scope
+
+- Started a new TikTok Go-inspired commerce flow inside the existing `Expedia` business chat without changing the current chat shell
+- Added a new `commerce-group` message model so Expedia can send one hotel card and one restaurant card in the same business message after the fixed itinerary copy
+- Wired the fixed Expedia feed-share script to append the new commerce message after the travel brief and itinerary sequence
+- Added first-pass Oahu / Waikiki themed local card assets for the hotel and restaurant recommendations
+- Added first-pass click-through screens for hotel detail, restaurant shelf, and restaurant deal detail flows with back navigation to the conversation experience
+
+### Notes
+
+- This entry records the current development baseline for the TikTok Go-style commerce expansion
+- The current implementation covers the in-chat cards plus the first clickable destination and offer pages
+- The next round should focus on visual fidelity polish against the provided references rather than new routing primitives
+
+### Next Phase Candidates
+
+- Refine visual fidelity, spacing, and motion details against the provided TikTok Go screenshots
+- Replace the first-pass local illustration assets with final destination imagery if better source material is provided
+- Expand the commerce flow with more realistic metadata, shelf modules, and CTA treatments once the target UI is locked
+
 ## V1.1
 
 - Status: `Current`
