@@ -1,8 +1,44 @@
 # Version History
 
-## V1.3
+## V2.0
 
 - Status: `Current`
+- Date: `2026-05-29`
+- Label: `TT Hotel And Restaurant Detail Completion`
+
+- Completed the TT-native hotel detail experience, including the final UI polish pass and the required `Share`, `Favorite`, and `Book` interaction behavior
+- Reworked the in-chat hotel card cover to use `public/media/room.jpg` and aligned the card metadata with the latest hotel-detail content direction
+- Added a static hotel booking screen for the `Book` CTA with top-level back navigation to the hotel detail page
+- Rebuilt the restaurant detail experience to follow the provided TT-native product-detail structure instead of the earlier simplified Expedia-style layout
+- Mapped Expedia restaurant information into TT-style sections, using `public/media/food.jpg` as the restaurant detail hero image
+- Updated the restaurant detail price band, CTA treatment, and map badge styling to better match the provided TT reference
+
+### Notes
+
+- This version is the current documented baseline for the hotel and restaurant detail experiences
+- The hotel detail page now includes its intended TT-style UI plus the required sharing, favorite, and booking navigation behavior
+- The restaurant detail page now uses the TT-native product-detail structure with Expedia-sourced content and assets
+- The hotel booking destination remains a static visual page with no further interaction, per the current requirement
+
+### Next Phase Candidates
+
+- Add the remaining restaurant-detail interactions if the page needs to match the hotel-detail interaction completeness
+- Tighten any remaining restaurant-detail spacing or visual fidelity against the target TT screenshots
+- Decide whether the static booking page should later evolve into a fuller OTA booking funnel
+
+## V1.5
+
+- Status: `Superseded`
+- Date: `2026-05-29`
+- Label: `TT Hotel Detail Completion`
+
+### Notes
+
+- This version captured the hotel-detail milestone before the restaurant-detail TT rebuild
+
+## V1.3
+
+- Status: `Superseded`
 - Date: `2026-05-29`
 - Label: `Commerce Card Fidelity Pass`
 

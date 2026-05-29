@@ -10,6 +10,7 @@ type Screen =
   | 'chat'
   | 'profile'
   | 'hotel-detail'
+  | 'hotel-booking'
   | 'restaurant-shelf'
   | 'restaurant-detail'
 type CommerceItem = {
@@ -55,16 +56,26 @@ type Message =
   | {
       id: string
       type: 'commerce-group'
-      sender: 'them'
+      sender: 'me' | 'them'
       title: string
       subtitle: string
       items: CommerceItem[]
+      hideHeader?: boolean
     }
 
 type IncomingMessage =
   | (Extract<Message, { type: 'text' }> & { sender: 'them' })
   | Extract<Message, { type: 'plan' }>
-  | Extract<Message, { type: 'commerce-group' }>
+  | (Extract<Message, { type: 'commerce-group' }> & { sender: 'them' })
+
+type SharePayload =
+  | {
+      kind: 'video'
+    }
+  | {
+      kind: 'commerce'
+      message: Extract<Message, { type: 'commerce-group' }>
+    }
 
 type Conversation = {
   recipientId: RecipientId
@@ -279,7 +290,7 @@ const expediaCommerceItems: CommerceItem[] = [
     ratingLabel: 'Exceptional',
     reviews: '1,000 reviews',
     cta: 'Book with Expedia',
-    image: '/media/oahu-mauna-lani-hotel-photo.jpg',
+    image: '/media/room.jpg',
     imagePosition: 'center center',
   },
   {
@@ -299,22 +310,75 @@ const expediaCommerceItems: CommerceItem[] = [
 
 const hotelDetail = {
   title: 'Mauna Lani, Auberge Collection',
-  eyebrow: 'Stay near Kohala Coast',
-  rating: '9.4 out of 10',
-  reviews: '1,000 verified reviews',
-  price: 'From $1,019 nightly',
-  address: '68-1400 Mauna Lani Dr, Kamuela, HI 96743',
-  summary:
-    'A polished Big Island resort with spacious rooms, resort pools, and a serene oceanfront setting that feels elevated and distinctly Hawaiian.',
-  highlights: [
-    'Contemporary island rooms with private lanai-style views',
-    'Resort pool access and a refined coastal atmosphere',
-    'Strong fit for a higher-end Hawaii stay with resort amenities',
-  ],
-  tripFit: [
-    'Best for travelers who want a more elevated resort-style stay',
-    'Works well for a slower luxury leg before or after active sightseeing',
-    'A good fit when pool time and resort downtime matter as much as excursions',
+  propertyType: '5-star hotel',
+  heroImage: '/media/be737903725b3c6e0ed744510f02f826.jpg',
+  heroImageCount: '1/4',
+  socialNote: 'VIP Access',
+  score: '9.4',
+  scoreLabel: 'Exceptional',
+  reviews: '1,000 reviews',
+  reviewCountShort: '(1000 reviews)',
+  highlight: 'Beachfront serenity on the island',
+  amenityHighlights: ['On beach', '2 outdoor pools', 'Mediterranean restaurant'],
+  locationSummary: '32 min drive from Kona Intl.',
+  address: '68-1400 Mauna Lani Dr, Kamuela, HI, 96743',
+  staySummary: '2-night trip · Expedia room options',
+  roomOffers: [
+    {
+      id: 'mauna-lani-room-mountain-view',
+      sectionLabel: 'Popular pick',
+      image: '/media/room1.jpg',
+      imageCount: 3,
+      title: 'Room, 1 King Bed, Mountain View',
+      metaChips: ['Sleeps 3', '1 King Bed', 'Mountain view'],
+      planBullets: [
+        { label: 'Non-refundable', tone: 'muted' },
+        { label: 'Free WiFi', tone: 'muted' },
+        { label: 'USD 100 resort credit per room, per day', tone: 'positive' },
+      ],
+      helper: 'This room is in demand',
+      nightlyPrice: '$1,019 nightly',
+      totalPrice: '$2,418 total',
+      feesLabel: 'Total with taxes and fees',
+      cta: 'Book',
+    },
+    {
+      id: 'mauna-lani-room-partial-ocean-view',
+      sectionLabel: 'Upgrade your stay',
+      image: '/media/room2.jpg',
+      imageCount: 4,
+      title: 'Room, 1 King Bed, Partial Ocean View',
+      metaChips: ['Sleeps 3', '1 King Bed', 'Partial ocean view'],
+      planBullets: [
+        { label: 'Non-refundable', tone: 'muted' },
+        { label: 'Free WiFi', tone: 'muted' },
+        { label: 'Member Price $266 off', tone: 'positive' },
+      ],
+      helper: 'Member price available',
+      nightlyPrice: '$1,069 nightly',
+      originalTotalPrice: '$2,805',
+      totalPrice: '$2,539 total',
+      feesLabel: 'Total with taxes and fees',
+      cta: 'Book',
+    },
+    {
+      id: 'mauna-lani-room-accessible-mountain-view',
+      sectionLabel: 'Accessible option',
+      image: '/media/room3.jpg',
+      imageCount: 5,
+      title: 'Room, 1 King Bed, Hearing Accessible, Mountain View (Mobility Accessible with Tub)',
+      metaChips: ['Sleeps 3', '1 King Bed', 'Accessible room'],
+      planBullets: [
+        { label: 'Non-refundable', tone: 'muted' },
+        { label: 'Free WiFi', tone: 'muted' },
+        { label: 'Mobility accessible with tub', tone: 'positive' },
+      ],
+      helper: 'Accessible stay available',
+      nightlyPrice: '$1,019 nightly',
+      totalPrice: '$2,418 total',
+      feesLabel: 'Total with taxes and fees',
+      cta: 'Book',
+    },
   ],
 }
 
@@ -328,41 +392,87 @@ const restaurantShelf = {
     'A lively Waikiki dining stop with iconic memorabilia, guitar-lined interiors, and crowd-pleasing burgers, drinks, and group-friendly energy.',
 }
 
+const restaurantDetail = {
+  city: 'Honolulu',
+  heroImage: '/media/food.jpg',
+  heroImageCount: '1/1',
+  topLabel: 'Free cancellation available',
+  title: 'Dining at Hard Rock Cafe Honolulu',
+  provider: 'By Hard Rock Cafe International',
+  price: '$40',
+  priceNote: 'includes taxes & fees per traveler',
+  ratingScore: '9.0',
+  ratingLabel: 'Wonderful',
+  reviews: 'See all 17 reviews',
+  trustBadges: ['Free cancellation available', 'Instant confirmation'],
+  redeemTitle: 'Hard Rock Cafe Honolulu',
+  redeemAddress: '280 Beach Walk, Honolulu, HI 96815',
+  redeemLink: 'View restaurant details',
+  features: [
+    'Free cancellation available',
+    '2h',
+    'Printed Voucher',
+    'Instant confirmation',
+  ],
+  overview: [
+    'Hard Rock Cafe Honolulu Dining Experience',
+    'Delicious lunch or dinner of classic American cuisine',
+    'Amazing ambiance and a collection of music memorabilia',
+    'Situated in the heart of Waikiki',
+    'With veranda seating and a striking ocean-blue wave bar',
+  ],
+  included: [
+    { label: 'Entree and dessert from fixed menu', included: true },
+    { label: 'Soft drink, coffee, or tea', included: true },
+    { label: 'Alcoholic beverages, bottled water, milk shakes, and specialty drinks', included: false },
+    { label: 'Merchandise purchases', included: false },
+  ],
+  thingsToNote: [
+    'Children 10 and younger can purchase from the Kids Menu at the restaurant.',
+    'Menu items are subject to change.',
+    'This voucher cannot be combined with any other coupons or special offers.',
+  ],
+  whatToExpect:
+    'Dine surrounded by amazing memorabilia like costumes and instruments from your favorite musicians at the Hard Rock Cafe. Enjoy a 2 or 3 course Hard Rock Dining Experience.',
+  cta: 'Buy for $40',
+}
+
 const restaurantDeals = [
   {
     id: 'hard-rock-burger-set',
     badge: 'Most booked',
-    title: 'Burger Dinner Set',
-    subtitle: 'Signature burger, drink, and dessert in the main dining room',
+    title: '2026 Acoustic Menu (2 courses)',
+    subtitle: 'Choose a burger, entree salad or sandwich, plus dessert and a drink.',
     price: '$40',
-    originalPrice: '$52',
+    originalPrice: '',
     includes: [
-      'One signature burger entree',
-      'One drink selection',
-      'One dessert add-on',
-      'Indoor dining at Hard Rock Cafe Honolulu',
+      'Entree and dessert from fixed menu',
+      'Soft drink, coffee, or tea',
+      'Printed voucher accepted onsite',
+      'No booking or credit card fees',
     ],
     notes: [
-      'Includes taxes and fees per traveler',
-      'Great for a simple Waikiki dinner stop',
-      'Cancellation policy may apply depending on booking window',
+      '2h dining experience',
+      'Opening hours: Sat 12:00pm-9:00pm',
+      'Free cancellation available',
     ],
   },
   {
     id: 'hard-rock-share-set',
     badge: 'Group dining',
-    title: 'Shareable Rock Menu',
-    subtitle: 'Starters, mains, and drinks designed for a casual group meal',
-    price: '$68',
-    originalPrice: '$84',
+    title: '2026 Electric Menu (3 courses)',
+    subtitle: 'Starter, entree, dessert, and drink for a fuller Hard Rock meal.',
+    price: '$40',
+    originalPrice: '',
     includes: [
-      'Starter and shared appetizer options',
-      'Main course selections for two travelers',
-      'Two drinks included',
+      'Three-course fixed menu',
+      'Soft drink, coffee, or tea',
+      'Printed voucher accepted onsite',
     ],
     notes: [
-      'Best for a longer sit-down meal',
-      'Works well after Waikiki shopping or beach time',
+      '2h dining experience',
+      'Food and drinks are included',
+      'See tickets for menu details',
     ],
   },
 ]
@@ -456,14 +566,35 @@ const makeSharedVideoMessage = (): Extract<Message, { type: 'shared-video' }> =>
   location: 'Kualoa Ranch',
 })
 
-const makeCommerceMessage = (): Extract<Message, { type: 'commerce-group' }> => ({
+const makeCommerceMessage = <T extends 'me' | 'them' = 'them'>(
+  overrides: Partial<Extract<Message, { type: 'commerce-group' }>> & { sender?: T } = {},
+): Extract<Message, { type: 'commerce-group' }> & { sender: T } => ({
   id: `commerce-${Date.now()}`,
   type: 'commerce-group',
-  sender: 'them',
+  sender: (overrides.sender ?? 'them') as T,
   title: 'Book This Trip With Expedia',
   subtitle: 'Two Oahu picks for this itinerary.',
   items: expediaCommerceItems,
+  ...overrides,
 })
+
+const makeSharedHotelCommerceMessage = (): Extract<Message, { type: 'commerce-group' }> & { sender: 'me' } =>
+  makeCommerceMessage({
+    id: `commerce-share-${Date.now()}`,
+    sender: 'me',
+    title: '',
+    subtitle: '',
+    items: [expediaCommerceItems[0]],
+    hideHeader: true,
+  })
+
+const getShareDraftDefault = (recipientId: RecipientId, payload: SharePayload) => {
+  if (payload.kind === 'commerce') {
+    return recipientId === 'expedia' ? 'Can you book this hotel?' : 'Would you stay here?'
+  }
+
+  return recipientId === 'expedia' ? 'How can I get there?' : 'Would you go here?'
+}
 
 const makeTextMessage = <T extends 'me' | 'them'>(
   content: string,
@@ -497,7 +628,7 @@ const serializeMessageForAi = (message: Message): AiChatMessage | null => {
 
   if (message.type === 'commerce-group') {
     return {
-      role: 'assistant',
+      role: message.sender === 'me' ? 'user' : 'assistant',
       content: `${message.title}\n${message.subtitle}\nRecommendations: ${message.items
         .map((item) => `${item.label}: ${item.title}`)
         .join(' | ')}`,
@@ -593,11 +724,14 @@ function App() {
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isHalfPreviewOpen, setIsHalfPreviewOpen] = useState(false)
   const [shareBannerRecipientId, setShareBannerRecipientId] = useState<RecipientId | null>(null)
+  const [shareOriginScreen, setShareOriginScreen] = useState<Screen>('feed')
+  const [sharePayload, setSharePayload] = useState<SharePayload>({ kind: 'video' })
   const [selectedRecipientId, setSelectedRecipientId] = useState<RecipientId>('expedia')
   const [activeConversationId, setActiveConversationId] = useState<RecipientId>('expedia')
-  const [shareDraft, setShareDraft] = useState('How can I get there?')
+  const [shareDraft, setShareDraft] = useState(getShareDraftDefault('expedia', { kind: 'video' }))
   const [chatDraft, setChatDraft] = useState('')
   const [activeRestaurantDealId, setActiveRestaurantDealId] = useState(restaurantDeals[0].id)
+  const [isHotelFavorited, setIsHotelFavorited] = useState(false)
   const [conversations, setConversations] =
     useState<Record<RecipientId, Conversation>>(initialConversations)
   const feedVideoRef = useRef<HTMLVideoElement | null>(null)
@@ -661,7 +795,7 @@ function App() {
 
   useEffect(() => {
     const target =
-      screen === 'chat' ? messagesRef.current : screen === 'feed' && isHalfPreviewOpen ? halfMessagesRef.current : null
+      screen === 'chat' ? messagesRef.current : isHalfPreviewOpen ? halfMessagesRef.current : null
 
     if (!target) return
 
@@ -908,11 +1042,21 @@ function App() {
     }
   }
 
-  const handleSendFromFeed = () => {
+  const openShareSheet = (payload: SharePayload, originScreen: Screen) => {
+    setSharePayload(payload)
+    setShareOriginScreen(originScreen)
+    setSelectedRecipientId('expedia')
+    setShareDraft(getShareDraftDefault('expedia', payload))
+    setIsShareOpen(true)
+  }
+
+  const handleSendSharedContent = () => {
     const nextConversation = conversations[selectedRecipientId]
+    const sharedMessage =
+      sharePayload.kind === 'video' ? makeSharedVideoMessage() : makeSharedHotelCommerceMessage()
     const nextMessages = [
       ...nextConversation.messages,
-      makeSharedVideoMessage(),
+      sharedMessage,
       ...(shareDraft.trim() ? [makeTextMessage(shareDraft.trim(), 'me')] : []),
     ]
 
@@ -927,16 +1071,12 @@ function App() {
     }))
     setIsShareOpen(false)
     setIsHalfPreviewOpen(false)
-    setScreen('feed')
+    setScreen(shareOriginScreen)
     setActiveConversationId(selectedRecipientId)
     setShareBannerRecipientId(selectedRecipientId)
-    setShareDraft(
-      selectedRecipientId === 'expedia'
-        ? 'How can I get there?'
-        : 'Would you go here?',
-    )
+    setShareDraft(getShareDraftDefault(selectedRecipientId, sharePayload))
     queueReply(selectedRecipientId, {
-      sharedFromFeed: selectedRecipientId === 'expedia',
+      sharedFromFeed: sharePayload.kind === 'video' && selectedRecipientId === 'expedia',
       prompt: shareDraft.trim(),
       historyMessages: nextMessages,
     })
@@ -963,7 +1103,13 @@ function App() {
   const handleOpenCommerceDestination = (item: CommerceItem) => {
     setActiveConversationId('expedia')
     setIsHalfPreviewOpen(false)
-    setScreen(item.kind === 'hotel' ? 'hotel-detail' : 'restaurant-shelf')
+    if (item.kind === 'hotel') {
+      setScreen('hotel-detail')
+      return
+    }
+
+    setActiveRestaurantDealId(restaurantDeals[0].id)
+    setScreen('restaurant-detail')
   }
 
   const handleOpenRestaurantDeal = (dealId: string) => {
@@ -975,7 +1121,31 @@ function App() {
     setScreen('chat')
   }
 
-  const isDarkChrome = screen === 'feed' || screen === 'friends'
+  const renderShareBanner = () => {
+    if (!shareBannerRecipientId) return null
+
+    return (
+      <button
+        type="button"
+        className="share-banner"
+        onClick={() => {
+          setActiveConversationId(shareBannerRecipientId)
+          setIsHalfPreviewOpen(true)
+        }}
+      >
+        <span className="share-banner-check">
+          <CheckIcon />
+        </span>
+        <span className="share-banner-copy">
+          <strong>Sent to {conversations[shareBannerRecipientId].title}</strong>
+          <span>Tap to preview the conversation</span>
+        </span>
+        <ChevronRightIcon />
+      </button>
+    )
+  }
+
+  const isDarkChrome = screen === 'feed' || screen === 'friends' || screen === 'hotel-booking'
   const statusTime =
     screen === 'feed' ? '20:01' : screen === 'chat' && activeConversationId === 'expedia' ? '20:02' : '20:03'
   const isBusinessChat = activeConversationId === 'expedia'
@@ -1047,14 +1217,16 @@ function App() {
   }
 
   const renderCommerceMessage = (message: Extract<Message, { type: 'commerce-group' }>) => (
-    <article key={message.id} className="message-row theirs">
+    <article key={message.id} className={`message-row ${message.sender === 'me' ? 'mine' : 'theirs'}`}>
       <div className="bubble bubble-commerce">
-        <div className="commerce-message-header">
-          <span className="commerce-message-kicker">Expedia picks</span>
-          <strong>{message.title}</strong>
-          <p>{message.subtitle}</p>
-        </div>
-        <div className="commerce-card-row">
+        {!message.hideHeader ? (
+          <div className="commerce-message-header">
+            <span className="commerce-message-kicker">Expedia picks</span>
+            <strong>{message.title}</strong>
+            <p>{message.subtitle}</p>
+          </div>
+        ) : null}
+        <div className={`commerce-card-row ${message.items.length === 1 ? 'is-single' : ''}`}>
           {message.items.map((item) => (
             <button
               key={item.id}
@@ -1099,6 +1271,85 @@ function App() {
     </article>
   )
 
+  const renderHotelBookingScreen = () => (
+    <div className="commerce-detail-screen hotel-booking-screen">
+      <section className="hotel-booking-scroll">
+        <section className="hotel-booking-hero">
+          <img className="hotel-booking-hero-image" src={hotelDetail.heroImage} alt={hotelDetail.title} />
+          <div className="hotel-booking-overlay" />
+          <div className="hotel-booking-topbar">
+            <button type="button" className="hotel-booking-icon" onClick={() => setScreen('hotel-detail')} aria-label="Back">
+              <BackIcon />
+            </button>
+            <div className="hotel-booking-actions" aria-hidden="true">
+              <button type="button" className="hotel-booking-icon" aria-label="Share">
+                <ShareIcon />
+              </button>
+              <button type="button" className="hotel-booking-icon" aria-label="Notifications">
+                <BellIcon />
+              </button>
+              <button type="button" className="hotel-booking-icon is-favorite" aria-label="Favorite">
+                <HeartIcon filled />
+              </button>
+            </div>
+          </div>
+          <div className="hotel-booking-gallery-ui" aria-hidden="true">
+            <span className="hotel-booking-gallery-dots">
+              <span className="is-active" />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="hotel-booking-gallery-count">
+              <ImageIcon />
+              <span>127</span>
+            </span>
+          </div>
+        </section>
+
+        <section className="hotel-booking-sheet">
+          <div className="hotel-booking-badge-row">
+            <span className="hotel-overview-badge is-gold">Luxury</span>
+            <span className="hotel-overview-badge is-dark">VIP Access</span>
+            <span className="hotel-star-row" aria-label="5 stars">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <StarIcon key={`booking-star-${index}`} />
+              ))}
+            </span>
+          </div>
+
+          <h1>{hotelDetail.title}</h1>
+
+          <div className="hotel-booking-score-row">
+            <span className="hotel-score-chip">{hotelDetail.score}</span>
+            <strong>{hotelDetail.scoreLabel}</strong>
+            <span>{hotelDetail.reviews}</span>
+            <ChevronRightIcon />
+          </div>
+
+          <h2>{hotelDetail.highlight}</h2>
+          <p>
+            A bamboo sanctuary with hammocks welcomes guests to this serene Hawaiian beachfront oasis. Snorkel in the nearby
+            lagoon with turtles and colorful fish. Families can use the kids club while adults enjoy CanoeHouse restaurant or
+            stargazing from private decks.
+          </p>
+
+          <button type="button" className="hotel-booking-primary">
+            Select a room
+          </button>
+        </section>
+
+        <section className="hotel-booking-followup">
+          <h3>Highlights for your 2-night trip</h3>
+        </section>
+      </section>
+    </div>
+  )
+
   const renderCommerceDetailHeader = (title: string, subtitle: string, onBack: () => void) => (
     <header className="commerce-detail-header">
       <button type="button" className="ghost-icon" onClick={onBack} aria-label="Back">
@@ -1115,48 +1366,159 @@ function App() {
   )
 
   const renderHotelDetailScreen = () => (
-    <div className="commerce-detail-screen">
-      {renderCommerceDetailHeader('Hotel', 'Back to Expedia chat', handleCloseCommerceDestination)}
-      <section className="commerce-detail-scroll">
-        <img className="commerce-detail-hero" src={expediaCommerceItems[0].image} alt={hotelDetail.title} />
-        <div className="commerce-detail-body">
-          <span className="commerce-page-kicker">{hotelDetail.eyebrow}</span>
-          <h2>{hotelDetail.title}</h2>
-          <div className="commerce-stat-row">
-            <span>{hotelDetail.rating}</span>
-            <span>{hotelDetail.reviews}</span>
+    <div className="commerce-detail-screen hotel-detail-screen">
+      <section className="hotel-detail-scroll">
+        <section className="hotel-hero">
+          <img className="hotel-hero-image" src={hotelDetail.heroImage} alt={hotelDetail.title} />
+          <div className="hotel-hero-overlay" />
+          <div className="hotel-hero-topbar">
+            <button type="button" className="hotel-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
+              <BackIcon />
+            </button>
+            <div className="hotel-hero-actions">
+              <button type="button" className="hotel-hero-icon" aria-label="Share" onClick={() => openShareSheet({ kind: 'commerce', message: makeSharedHotelCommerceMessage() }, 'hotel-detail')}>
+                <ShareIcon />
+              </button>
+              <button type="button" className="hotel-hero-icon" aria-label="More">
+                <DotsIcon />
+              </button>
+            </div>
           </div>
-          <p className="commerce-address">{hotelDetail.address}</p>
-          <p className="commerce-summary">{hotelDetail.summary}</p>
+          <span className="hotel-hero-count">{hotelDetail.heroImageCount}</span>
+        </section>
 
-          <section className="commerce-section">
-            <h3>Why Expedia picked this stay</h3>
-            <div className="commerce-tag-list">
-              {hotelDetail.highlights.map((highlight) => (
-                <span key={highlight} className="commerce-tag">
-                  {highlight}
-                </span>
+        <section className="hotel-sheet">
+          <div className="hotel-title-row">
+            <h1>{hotelDetail.title}</h1>
+          </div>
+
+          <div className="hotel-subtitle-row">
+            <span className="hotel-property-type">{hotelDetail.propertyType}</span>
+            <span className="hotel-note-pill">{hotelDetail.socialNote}</span>
+          </div>
+
+          <button type="button" className="hotel-highlight-link">
+            <span className="hotel-highlight-link-icon">
+              <SparklesIcon />
+            </span>
+            <span>{hotelDetail.highlight}</span>
+            <ChevronRightIcon />
+          </button>
+
+          <div className="hotel-amenity-row">
+            {hotelDetail.amenityHighlights.map((item) => (
+              <span key={item} className="hotel-amenity-item">
+                {item}
+              </span>
+            ))}
+          </div>
+
+          <div className="hotel-info-grid">
+            <div className="hotel-rating-panel">
+              <div className="hotel-rating-line">
+                <strong>{hotelDetail.score}</strong>
+                <div className="hotel-rating-copy">
+                  <span>{hotelDetail.reviewCountShort}</span>
+                </div>
+              </div>
+              <div className="hotel-rating-stars">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <StarIcon key={`hotel-score-star-${index}`} />
+                ))}
+              </div>
+            </div>
+
+            <div className="hotel-location-panel">
+              <strong>{hotelDetail.locationSummary}</strong>
+              <span>{hotelDetail.address}</span>
+              <span className="hotel-location-cta">
+                <LocationBadgeIcon />
+              </span>
+            </div>
+          </div>
+
+          <button type="button" className="hotel-stay-row">
+            <span>{hotelDetail.staySummary}</span>
+            <ChevronRightIcon />
+          </button>
+
+          <section className="hotel-provider-section">
+            <div className="hotel-provider-list">
+              {hotelDetail.roomOffers.map((room) => (
+                <article key={room.id} className="hotel-offer-card">
+                  <div className="hotel-offer-summary">
+                    <div className="hotel-offer-media-wrap">
+                      <span className="hotel-offer-badge">{room.sectionLabel}</span>
+                      <img className="hotel-offer-media" src={room.image} alt={room.title} />
+                      <span className="hotel-offer-media-count">{room.imageCount}</span>
+                    </div>
+
+                    <div className="hotel-offer-copy">
+                      <div className="hotel-offer-title-row">
+                        <strong>{room.title}</strong>
+                        <span className="hotel-offer-expand">
+                          <ChevronDownSmallIcon />
+                        </span>
+                      </div>
+                      <div className="hotel-offer-meta-row">
+                        {room.metaChips.map((chip) => (
+                          <span key={chip} className="hotel-offer-meta-chip">
+                            {chip}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="hotel-offer-plan">
+                    <div className="hotel-offer-plan-copy">
+                      {room.planBullets.map((line) => (
+                        <p key={line.label} className={line.tone === 'positive' ? 'is-positive' : ''}>
+                          <span className="hotel-offer-bullet">{line.tone === 'positive' ? '✓' : '⊘'}</span>
+                          <span>{line.label}</span>
+                        </p>
+                      ))}
+                    </div>
+
+                    <div className="hotel-offer-price">
+                      <span>{room.nightlyPrice}</span>
+                      <div className="hotel-offer-total">
+                        {room.originalTotalPrice ? <span className="hotel-offer-original">{room.originalTotalPrice}</span> : null}
+                        <strong>{room.totalPrice}</strong>
+                      </div>
+                      <small>{room.feesLabel}</small>
+                    </div>
+                  </div>
+
+                  <div className="hotel-offer-footer">
+                    <span className="hotel-offer-helper">{room.helper}</span>
+                    <button type="button" className="hotel-offer-book" onClick={() => setScreen('hotel-booking')}>
+                      {room.cta}
+                    </button>
+                  </div>
+                </article>
               ))}
             </div>
           </section>
-
-          <section className="commerce-section">
-            <h3>Best fit for this trip</h3>
-            <div className="commerce-info-card">
-              {hotelDetail.tripFit.map((item) => (
-                <p key={item}>{item}</p>
-              ))}
-            </div>
-          </section>
-        </div>
+        </section>
       </section>
-      <div className="commerce-bottom-bar">
-        <div>
-          <span className="commerce-bottom-label">Expedia rate</span>
-          <strong>{hotelDetail.price}</strong>
-        </div>
-        <button type="button" className="commerce-primary-button">
-          Reserve
+
+      <div className="hotel-bottom-bar">
+        <button
+          type="button"
+          className="hotel-bottom-secondary"
+          onClick={() => openShareSheet({ kind: 'commerce', message: makeSharedHotelCommerceMessage() }, 'hotel-detail')}
+        >
+          <ShareIcon />
+          <span>Share</span>
+        </button>
+        <button
+          type="button"
+          className={`hotel-bottom-primary ${isHotelFavorited ? 'is-favorited' : ''}`}
+          onClick={() => setIsHotelFavorited((current) => !current)}
+        >
+          {isHotelFavorited ? <HeartIcon filled /> : <FavoriteOutlineIcon />}
+          <span>{isHotelFavorited ? 'Favorited' : 'Favorite'}</span>
         </button>
       </div>
     </div>
@@ -1210,49 +1572,126 @@ function App() {
   )
 
   const renderRestaurantDetailScreen = () => (
-    <div className="commerce-detail-screen">
-      {renderCommerceDetailHeader("Duke's Deal", 'Back to restaurant offers', () => setScreen('restaurant-shelf'))}
-      <section className="commerce-detail-scroll">
-        <img className="commerce-detail-hero" src={expediaCommerceItems[1].image} alt={activeRestaurantDeal.title} />
-        <div className="commerce-detail-body">
-          <span className="commerce-page-kicker">{activeRestaurantDeal.badge}</span>
-          <h2>{activeRestaurantDeal.title}</h2>
-          <p className="commerce-summary">{activeRestaurantDeal.subtitle}</p>
+    <div className="commerce-detail-screen restaurant-detail-screen">
+      <section className="restaurant-detail-scroll">
+        <section className="restaurant-detail-hero">
+          <img className="restaurant-detail-hero-image" src={restaurantDetail.heroImage} alt={restaurantDetail.title} />
+          <div className="restaurant-detail-hero-overlay" />
+          <div className="restaurant-detail-hero-topbar">
+            <button type="button" className="restaurant-detail-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
+              <BackIcon />
+            </button>
+            <button type="button" className="restaurant-detail-hero-icon" aria-label="More">
+              <DotsIcon />
+            </button>
+          </div>
+          <span className="restaurant-detail-hero-count">{restaurantDetail.heroImageCount}</span>
+        </section>
 
-          <div className="commerce-price-card">
+        <section className="restaurant-detail-price-band">
+          <span className="restaurant-detail-top-label">{restaurantDetail.topLabel}</span>
+          <div className="restaurant-detail-price-row">
+            <strong>{restaurantDetail.price}</strong>
+          </div>
+          <span className="restaurant-detail-price-note">{restaurantDetail.priceNote}</span>
+        </section>
+
+        <section className="restaurant-detail-main-card">
+          <div className="restaurant-detail-title-row">
             <div>
-              <span className="commerce-bottom-label">Deal price</span>
-              <strong>{activeRestaurantDeal.price}</strong>
+              <h1>{restaurantDetail.title}</h1>
+              <p>{restaurantDetail.provider}</p>
             </div>
-            <span className="commerce-original-price">{activeRestaurantDeal.originalPrice}</span>
+            <span className="restaurant-detail-meta-pill">{activeRestaurantDeal.badge}</span>
           </div>
 
-          <section className="commerce-section">
-            <h3>Includes</h3>
-            <div className="commerce-info-card">
-              {activeRestaurantDeal.includes.map((item) => (
-                <p key={item}>{item}</p>
-              ))}
-            </div>
-          </section>
+          <div className="restaurant-detail-rating-row">
+            <span className="restaurant-detail-score-chip">{restaurantDetail.ratingScore}</span>
+            <strong>{restaurantDetail.ratingLabel}</strong>
+            <button type="button" className="restaurant-detail-inline-link">
+              <span>{restaurantDetail.reviews}</span>
+              <ChevronRightIcon />
+            </button>
+          </div>
 
-          <section className="commerce-section">
-            <h3>Good to know</h3>
-            <div className="commerce-info-card">
-              {activeRestaurantDeal.notes.map((item) => (
-                <p key={item}>{item}</p>
-              ))}
+          <div className="restaurant-detail-trust-row">
+            {restaurantDetail.trustBadges.map((badge) => (
+              <span key={badge} className="restaurant-detail-trust-item">
+                {badge}
+              </span>
+            ))}
+          </div>
+
+          <div className="restaurant-redeem-row">
+            <div className="restaurant-redeem-copy">
+              <span className="restaurant-redeem-label">Redeem at</span>
+              <strong>{restaurantDetail.redeemTitle}</strong>
+              <p>{restaurantDetail.redeemAddress}</p>
+              <button type="button" className="restaurant-redeem-link">
+                {restaurantDetail.redeemLink}
+              </button>
             </div>
-          </section>
-        </div>
+            <span className="restaurant-redeem-icon">
+              <LocationBadgeIcon />
+            </span>
+          </div>
+        </section>
+
+        <section className="restaurant-detail-section">
+          <h3>Features</h3>
+          <div className="restaurant-detail-list-card">
+            {restaurantDetail.features.map((item) => (
+              <div key={item} className="restaurant-detail-feature-row">
+                <span className="restaurant-detail-feature-icon">
+                  <RestaurantDetailFeatureIcon label={item} />
+                </span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="restaurant-detail-section">
+          <h3>Description</h3>
+          <div className="restaurant-detail-copy-card">
+            <ul className="restaurant-detail-bullets">
+              {restaurantDetail.overview.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <p className="restaurant-detail-expect-copy">{restaurantDetail.whatToExpect}</p>
+          </div>
+        </section>
+
+        <section className="restaurant-detail-section">
+          <h3>What's included, what's not</h3>
+          <div className="restaurant-detail-list-card">
+            {restaurantDetail.included.map((item) => (
+              <div key={item.label} className="restaurant-detail-feature-row">
+                <span className={`restaurant-detail-feature-icon ${item.included ? 'is-positive' : 'is-negative'}`}>
+                  {item.included ? <CheckIcon /> : <CloseIcon />}
+                </span>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="restaurant-detail-section">
+          <h3>Things to note</h3>
+          <div className="restaurant-detail-copy-card">
+            <ul className="restaurant-detail-bullets">
+              {restaurantDetail.thingsToNote.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </section>
-      <div className="commerce-bottom-bar">
-        <div>
-          <span className="commerce-bottom-label">Ready when you are</span>
-          <strong>{activeRestaurantDeal.price}</strong>
-        </div>
-        <button type="button" className="commerce-primary-button">
-          Save offer
+
+      <div className="restaurant-detail-bottom-bar">
+        <button type="button" className="restaurant-detail-primary-button">
+          {restaurantDetail.cta}
         </button>
       </div>
     </div>
@@ -1394,7 +1833,7 @@ function App() {
                   <button
                     type="button"
                     className="action-button"
-                    onClick={() => setIsShareOpen(true)}
+                    onClick={() => openShareSheet({ kind: 'video' }, 'feed')}
                   >
                     <ShareIcon />
                     <span className="action-count">{feedContent.shareCount}</span>
@@ -1432,27 +1871,7 @@ function App() {
                   <ChevronRightIcon />
                 </button>
 
-                {shareBannerRecipientId && (
-                  <button
-                    type="button"
-                    className="share-banner"
-                    onClick={() => {
-                      setActiveConversationId(shareBannerRecipientId)
-                      setIsHalfPreviewOpen(true)
-                    }}
-                  >
-                    <span className="share-banner-check">
-                      <CheckIcon />
-                    </span>
-                    <span className="share-banner-copy">
-                      <strong>
-                        Sent to {conversations[shareBannerRecipientId].title}
-                      </strong>
-                      <span>Tap to preview the conversation</span>
-                    </span>
-                    <ChevronRightIcon />
-                  </button>
-                )}
+                {shareOriginScreen === 'feed' && !isShareOpen && !isHalfPreviewOpen ? renderShareBanner() : null}
               </div>
             )}
 
@@ -1670,6 +2089,8 @@ function App() {
             )}
 
             {screen === 'hotel-detail' && renderHotelDetailScreen()}
+
+            {screen === 'hotel-booking' && renderHotelBookingScreen()}
 
             {screen === 'restaurant-shelf' && renderRestaurantShelfScreen()}
 
@@ -1997,7 +2418,7 @@ function App() {
               </nav>
             )}
 
-            {screen === 'feed' && isHalfPreviewOpen && (
+            {isHalfPreviewOpen && (
               <div className="sheet-backdrop" onClick={() => setIsHalfPreviewOpen(false)}>
                 <section
                   className="half-chat-sheet"
@@ -2217,11 +2638,7 @@ function App() {
                         }`}
                         onClick={() => {
                           setSelectedRecipientId(recipient.id)
-                          setShareDraft(
-                            recipient.id === 'expedia'
-                              ? 'How can I get there?'
-                              : 'Would you go here?',
-                          )
+                          setShareDraft(getShareDraftDefault(recipient.id, sharePayload))
                         }}
                       >
                         <span className="recipient-portrait-wrap">
@@ -2288,7 +2705,7 @@ function App() {
                     ))}
                   </div>
 
-                  <button type="button" className="primary-button" onClick={handleSendFromFeed}>
+                  <button type="button" className="primary-button" onClick={handleSendSharedContent}>
                     Send
                   </button>
                 </section>
@@ -2381,6 +2798,116 @@ function ShareIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="3.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 4.8a4.6 4.6 0 0 0-4.6 4.6v2.15c0 1.38-.4 2.73-1.16 3.88l-.91 1.37h13.46l-.91-1.37A7 7 0 0 1 16.6 11.55V9.4A4.6 4.6 0 0 0 12 4.8Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.8 18.1a2.2 2.2 0 0 0 4.4 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function FavoriteOutlineIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 20.55c-.2 0-.39-.06-.56-.18-.97-.72-6.84-5.03-7.84-9.57-.74-3.33 1.29-5.8 4.33-5.8 1.58 0 3 .7 4.07 1.98C13.07 5.7 14.49 5 16.07 5c3.04 0 5.07 2.47 4.33 5.8-1 4.54-6.87 8.85-7.84 9.57-.17.12-.36.18-.56.18Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="m8 1.8 1.74 3.52 3.88.56-2.81 2.74.66 3.87L8 10.66 4.53 12.5l.66-3.87L2.38 5.9l3.88-.56L8 1.8Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
+function SparklesIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path
+        d="M4.2 6.4 5.1 4l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9ZM10.9 3.6l.52-1.4.52 1.4 1.4.52-1.4.52-.52 1.4-.52-1.4-1.4-.52 1.4-.52ZM10.8 10.1l.8-2.16.8 2.16 2.16.8-2.16.8-.8 2.16-.8-2.16-2.16-.8 2.16-.8Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
+function RestaurantDetailFeatureIcon({ label }: { label: string }) {
+  if (label.includes('2h')) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="7.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M12 8.1v4.3l2.9 1.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  if (label.includes('Voucher')) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M6 8.1a1.9 1.9 0 1 1 0 3.8v4h12v-4a1.9 1.9 0 1 1 0-3.8v-4H6v4Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path d="M12 4.1v11.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeDasharray="2.2 2.2" />
+      </svg>
+    )
+  }
+
+  if (label.includes('Instant')) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="m12.6 4.6-5.1 8.2h3.35l-.58 6.6 5.23-8.2H12.1l.5-6.6Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="m6.1 12.4 3.15 3.15 8.65-8.65"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
