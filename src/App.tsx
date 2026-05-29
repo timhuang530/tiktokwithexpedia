@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import posterImage from './assets/chongqing-scene.svg'
 import cathyAvatar from './assets/cathy-avatar.svg'
 import './App.css'
 
@@ -417,7 +416,15 @@ function App() {
   const [screen, setScreen] = useState<Screen>('feed')
   const [isLiked, setIsLiked] = useState(false)
   const [hasVideoError, setHasVideoError] = useState(false)
+  const [isFeedVideoReady, setIsFeedVideoReady] = useState(false)
   const [sharedVideoPreviewSrc, setSharedVideoPreviewSrc] = useState<string | null>(null)
+  const [feedPosterSrc, setFeedPosterSrc] = useState<string | null>(() => {
+    try {
+      return window.localStorage.getItem('feedVideoFirstFrame')
+    } catch {
+      return null
+    }
+  })
   const [expediaAvatarSrc, setExpediaAvatarSrc] = useState<string | null>(expediaAvatarAsset)
   const [feedAvatarSrc, setFeedAvatarSrc] = useState('/media/cathy-avatar.png')
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -446,12 +453,28 @@ function App() {
     if (!context) return
 
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    setSharedVideoPreviewSrc(canvas.toDataURL('image/jpeg', 0.92))
+    const nextFrame = canvas.toDataURL('image/jpeg', 0.92)
+    setSharedVideoPreviewSrc(nextFrame)
+    setFeedPosterSrc(nextFrame)
+
+    try {
+      window.localStorage.setItem('feedVideoFirstFrame', nextFrame)
+    } catch {
+      // Ignore storage failures and keep the in-memory frame.
+    }
   }
 
   useEffect(() => {
     setExpediaAvatarSrc(expediaAvatarAsset)
   }, [expediaAvatarAsset])
+
+  useEffect(() => {
+    if (!feedVideoRef.current || hasVideoError) return
+
+    feedVideoRef.current.play().catch(() => {
+      // Mobile browsers may defer autoplay until enough data is buffered.
+    })
+  }, [hasVideoError])
 
   useEffect(() => {
     const target =
@@ -877,28 +900,60 @@ function App() {
             {screen === 'feed' && (
               <div className="feed-screen">
                 {!hasVideoError ? (
-                  <video
-                    ref={(node) => {
-                      feedVideoRef.current = node
+                  <>
+                    {feedPosterSrc ? (
+                      <img
+                        className={`poster-media feed-fallback-frame ${isFeedVideoReady ? 'is-hidden' : ''}`}
+                        src={feedPosterSrc}
+                        alt="Kualoa Ranch video first frame"
+                      />
+                    ) : (
+                      <div
+                        className={`poster-media video-loading-state ${isFeedVideoReady ? 'is-hidden' : ''}`}
+                        aria-hidden="true"
+                      >
+                        <span className="video-loading-spinner" />
+                      </div>
+                    )}
+                    <video
+                      ref={(node) => {
+                        feedVideoRef.current = node
 
-                      if (node && node.readyState >= 2) {
-                        captureSharedVideoFrame(node)
-                      }
-                    }}
-                    className="poster-media"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                    poster={posterImage}
-                    onError={() => setHasVideoError(true)}
-                    onLoadedData={(event) => captureSharedVideoFrame(event.currentTarget)}
-                  >
-                    <source src="/media/feed-video.mp4" type="video/mp4" />
-                  </video>
+                        if (node && node.readyState >= 2) {
+                          captureSharedVideoFrame(node)
+                          setIsFeedVideoReady(true)
+                        }
+                      }}
+                      className={`poster-media feed-video ${isFeedVideoReady ? 'is-ready' : ''}`}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      poster={feedPosterSrc ?? undefined}
+                      onError={() => setHasVideoError(true)}
+                      onLoadedData={(event) => {
+                        captureSharedVideoFrame(event.currentTarget)
+                        setIsFeedVideoReady(true)
+                      }}
+                      onCanPlay={(event) => {
+                        setIsFeedVideoReady(true)
+                        event.currentTarget.play().catch(() => {
+                          // Ignore autoplay rejections and keep the first frame visible.
+                        })
+                      }}
+                    >
+                      <source src="/media/feed-video.mp4" type="video/mp4" />
+                    </video>
+                  </>
                 ) : (
-                  <img className="poster-media" src={posterImage} alt="Scenic view at Kualoa Ranch" />
+                  <>
+                    {feedPosterSrc ? (
+                      <img className="poster-media feed-fallback-frame" src={feedPosterSrc} alt="Kualoa Ranch video first frame" />
+                    ) : (
+                      <div className="poster-media video-loading-state is-error" aria-hidden="true" />
+                    )}
+                  </>
                 )}
                 <div className="feed-overlay" />
 
@@ -1298,7 +1353,11 @@ function App() {
                                 <div className="business-shared-placeholder" aria-hidden="true" />
                               )
                             ) : (
-                              <img src={sharedVideoPreviewSrc ?? posterImage} alt={message.location} />
+                              sharedVideoPreviewSrc || feedPosterSrc ? (
+                                <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? ''} alt={message.location} />
+                              ) : (
+                                <div className="business-shared-placeholder" aria-hidden="true" />
+                              )
                             )}
                             <div className="shared-card-copy">
                               {isBusinessChat ? (
@@ -1448,6 +1507,7 @@ function App() {
                         onChange={(event) => setChatDraft(event.target.value)}
                         placeholder="Message..."
                         aria-label="Message input"
+                        enterKeyHint="send"
                       />
                       <button type="button" className="composer-icon">
                         <ImageIcon />
@@ -1458,7 +1518,7 @@ function App() {
                       <button type="button" className="composer-icon">
                         <MicIcon />
                       </button>
-                      <button type="submit" className="sr-only">
+                      <button type="submit" className={`send-mini business-send ${chatDraft.trim() ? 'is-visible' : ''}`}>
                         Send
                       </button>
                     </form>
@@ -1479,6 +1539,7 @@ function App() {
                       onChange={(event) => setChatDraft(event.target.value)}
                       placeholder="Message..."
                       aria-label="Message input"
+                      enterKeyHint="send"
                     />
                     <button type="button" className="composer-icon">
                       <ImageIcon />
@@ -1618,7 +1679,11 @@ function App() {
                               </>
                             ) : (
                               <div className="shared-card compact">
-                                <img src={sharedVideoPreviewSrc ?? posterImage} alt={message.location} />
+                                {sharedVideoPreviewSrc || feedPosterSrc ? (
+                                  <img src={sharedVideoPreviewSrc ?? feedPosterSrc ?? ''} alt={message.location} />
+                                ) : (
+                                  <div className="business-shared-placeholder" aria-hidden="true" />
+                                )}
                                 <div className="shared-card-copy">
                                   <span className="shared-label">Shared destination</span>
                                   <strong>{message.location}</strong>
@@ -1700,6 +1765,7 @@ function App() {
                       onChange={(event) => setChatDraft(event.target.value)}
                       placeholder="Message..."
                       aria-label="Message input"
+                      enterKeyHint="send"
                     />
                     <button type="button" className="composer-icon">
                       <ImageIcon />
