@@ -101,7 +101,7 @@ const feedVideoPosterAsset = '/media/feed-video-frame.png'
 const feedContent = {
   title: 'WELCOME TO JURASSIC PARK',
   location: 'KUALOA RANCH, OAHU',
-  author: 'Cathy',
+  author: 'kthycnt',
   date: '4-24',
   badge: 'Kualoa Ranch · View | 2',
   caption:
