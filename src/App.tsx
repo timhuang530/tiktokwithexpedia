@@ -35,6 +35,7 @@ type Conversation = {
   title: string
   subtitle: string
   status: 'idle' | 'sending' | 'typing'
+  unreadCount: number
   avatar: string
   accent?: string
   onlineLabel: string
@@ -118,6 +119,7 @@ const initialConversations: Record<RecipientId, Conversation> = {
     title: 'Expedia',
     subtitle: 'You can only send up to 1 message before request is accepted.',
     status: 'idle',
+    unreadCount: 0,
     avatar: 'E',
     accent: '#FFCC00',
     onlineLabel: 'Online now',
@@ -129,6 +131,7 @@ const initialConversations: Record<RecipientId, Conversation> = {
     title: 'timhuang0630',
     subtitle: 'Saturday works for me.',
     status: 'idle',
+    unreadCount: 0,
     avatar: 'T',
     accent: '#7B61FF',
     onlineLabel: 'Active today',
@@ -164,6 +167,7 @@ const initialConversations: Record<RecipientId, Conversation> = {
     title: 'Mia Park',
     subtitle: 'Let me check flights tonight.',
     status: 'idle',
+    unreadCount: 0,
     avatar: 'M',
     accent: '#E6E9F2',
     onlineLabel: 'Online now',
@@ -479,6 +483,23 @@ function App() {
   }, [hasVideoError])
 
   useEffect(() => {
+    if (screen !== 'chat') return
+
+    setConversations((current) => {
+      const conversation = current[activeConversationId]
+      if (!conversation.unreadCount) return current
+
+      return {
+        ...current,
+        [activeConversationId]: {
+          ...conversation,
+          unreadCount: 0,
+        },
+      }
+    })
+  }, [activeConversationId, screen])
+
+  useEffect(() => {
     const target =
       screen === 'chat' ? messagesRef.current : screen === 'feed' && isHalfPreviewOpen ? halfMessagesRef.current : null
 
@@ -507,6 +528,10 @@ function App() {
       }),
     [conversations],
   )
+  const totalUnreadCount = useMemo(
+    () => Object.values(conversations).reduce((sum, conversation) => sum + conversation.unreadCount, 0),
+    [conversations],
+  )
 
   const setConversationStatus = (recipientId: RecipientId, status: Conversation['status'], subtitle: string) => {
     setConversations((current) => ({
@@ -533,6 +558,8 @@ function App() {
           ...conversation,
           status: 'idle',
           subtitle,
+          unreadCount:
+            conversation.unreadCount + (screen === 'chat' && activeConversationId === recipientId ? 0 : 1),
           messages: [...conversation.messages, message],
         },
       }
@@ -618,20 +645,11 @@ function App() {
           }, 500)
 
           window.setTimeout(() => {
-            setConversations((current) => {
-              const conversation = current[recipientId]
-              const welcomeMessage = makeTextMessage(expediaFeedWelcomeMessage, 'them')
-
-              return {
-                ...current,
-                [recipientId]: {
-                  ...conversation,
-                  status: 'idle',
-                  subtitle: '✈️ Welcome to Expedia Trip Matching 🏝️',
-                  messages: [...conversation.messages, welcomeMessage],
-                },
-              }
-            })
+            appendConversationMessage(
+              recipientId,
+              makeTextMessage(expediaFeedWelcomeMessage, 'them') as Extract<Message, { type: 'text' }>,
+              '✈️ Welcome to Expedia Trip Matching 🏝️',
+            )
           }, 1800)
 
           window.setTimeout(() => {
@@ -639,20 +657,11 @@ function App() {
           }, 3000)
 
           window.setTimeout(() => {
-            setConversations((current) => {
-              const conversation = current[recipientId]
-              const travelBriefMessage = makeTextMessage(expediaTravelBriefMessage, 'them')
-
-              return {
-                ...current,
-                [recipientId]: {
-                  ...conversation,
-                  status: 'idle',
-                  subtitle: 'Destination Overview',
-                  messages: [...conversation.messages, travelBriefMessage],
-                },
-              }
-            })
+            appendConversationMessage(
+              recipientId,
+              makeTextMessage(expediaTravelBriefMessage, 'them') as Extract<Message, { type: 'text' }>,
+              'Destination Overview',
+            )
           }, 4600)
 
           window.setTimeout(() => {
@@ -660,20 +669,11 @@ function App() {
           }, 6200)
 
           window.setTimeout(() => {
-            setConversations((current) => {
-              const conversation = current[recipientId]
-              const itineraryMessage = makeTextMessage(expediaItineraryMessage, 'them')
-
-              return {
-                ...current,
-                [recipientId]: {
-                  ...conversation,
-                  status: 'idle',
-                  subtitle: 'Suggested Itinerary',
-                  messages: [...conversation.messages, itineraryMessage],
-                },
-              }
-            })
+            appendConversationMessage(
+              recipientId,
+              makeTextMessage(expediaItineraryMessage, 'them') as Extract<Message, { type: 'text' }>,
+              'Suggested Itinerary',
+            )
           }, 7800)
         } else if (shouldUseFixedShareScript) {
           window.setTimeout(() => {
@@ -681,20 +681,11 @@ function App() {
           }, 500)
 
           window.setTimeout(() => {
-            setConversations((current) => {
-              const conversation = current[recipientId]
-              const travelBriefMessage = makeTextMessage(expediaTravelBriefMessage, 'them')
-
-              return {
-                ...current,
-                [recipientId]: {
-                  ...conversation,
-                  status: 'idle',
-                  subtitle: 'Destination Overview',
-                  messages: [...conversation.messages, travelBriefMessage],
-                },
-              }
-            })
+            appendConversationMessage(
+              recipientId,
+              makeTextMessage(expediaTravelBriefMessage, 'them') as Extract<Message, { type: 'text' }>,
+              'Destination Overview',
+            )
           }, 2100)
 
           window.setTimeout(() => {
@@ -702,20 +693,11 @@ function App() {
           }, 3400)
 
           window.setTimeout(() => {
-            setConversations((current) => {
-              const conversation = current[recipientId]
-              const itineraryMessage = makeTextMessage(expediaItineraryMessage, 'them')
-
-              return {
-                ...current,
-                [recipientId]: {
-                  ...conversation,
-                  status: 'idle',
-                  subtitle: 'Suggested Itinerary',
-                  messages: [...conversation.messages, itineraryMessage],
-                },
-              }
-            })
+            appendConversationMessage(
+              recipientId,
+              makeTextMessage(expediaItineraryMessage, 'them') as Extract<Message, { type: 'text' }>,
+              'Suggested Itinerary',
+            )
           }, 5000)
         } else if (options.historyMessages) {
           void queueAiReply(
@@ -734,20 +716,11 @@ function App() {
         }, 500)
 
         window.setTimeout(() => {
-          setConversations((current) => {
-            const conversation = current[recipientId]
-            const welcomeMessage = makeTextMessage(expediaWelcomeMessage, 'them')
-
-            return {
-              ...current,
-              [recipientId]: {
-                ...conversation,
-                status: 'idle',
-                subtitle: '✈️ Welcome to Expedia Trip Matching 🏝️',
-                messages: [...conversation.messages, welcomeMessage],
-              },
-            }
-          })
+          appendConversationMessage(
+            recipientId,
+            makeTextMessage(expediaWelcomeMessage, 'them') as Extract<Message, { type: 'text' }>,
+            '✈️ Welcome to Expedia Trip Matching 🏝️',
+          )
         }, 1800)
       } else if (options?.prompt?.trim() && options.historyMessages) {
         void queueAiReply(recipientId, options.historyMessages, options.prompt)
@@ -1161,6 +1134,9 @@ function App() {
                       </span>
                       <span className="conversation-tail">
                         {conversation.recipientId === 'expedia' && <span className="row-meta">Just now</span>}
+                        {conversation.unreadCount > 0 && (
+                          <span className="conversation-unread-badge">{conversation.unreadCount}</span>
+                        )}
                         <span className="row-side-icon">
                           <CameraIcon />
                         </span>
@@ -1587,7 +1563,10 @@ function App() {
                   className={screen === 'inbox' ? 'nav-active' : ''}
                   onClick={() => setScreen('inbox')}
                 >
-                  <InboxIcon />
+                  <span className="nav-icon-wrap">
+                    <InboxIcon />
+                    {totalUnreadCount > 0 && <span className="bottom-nav-unread-badge">{totalUnreadCount}</span>}
+                  </span>
                   <span>Inbox</span>
                 </button>
                 <button
