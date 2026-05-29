@@ -1253,7 +1253,7 @@
 
 .composer input {
   min-width: 0;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .composer input::placeholder,
@@ -1267,23 +1267,6 @@
   font-size: 14px;
   line-height: 1;
   flex: 0 0 auto;
-}
-
-.business-send {
-  display: none;
-  height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
-}
-
-.business-send.is-visible {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.business-send:disabled {
-  opacity: 0.42;
 }
 
 .bottom-nav {
@@ -4128,7 +4111,7 @@
 }
 
 .business-composer.is-chat-focused {
-  grid-template-columns: 28px minmax(0, 1fr) 28px auto;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
 }
 
 .business-composer.is-chat-focused .composer-avatar-button,

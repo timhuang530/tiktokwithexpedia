@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import cathyAvatar from './assets/cathy-avatar.svg'
 import './App.css'
 
@@ -142,8 +143,10 @@ const quickMessages = [
 ]
 
 const reactionEmojis = ['🥰', '👍', '😂', '😎', '🥺', '🙏']
-const feedVideoAsset = '/media/feed-video-faststart.mp4'
-const feedVideoPosterAsset = '/media/feed-video-frame.png'
+const isLocalFileMode = import.meta.env.VITE_LOCAL_FILE_MODE === 'true'
+const asset = (path: string) => (isLocalFileMode ? `.${path}` : path)
+const feedVideoAsset = asset('/media/feed-video-faststart.mp4')
+const feedVideoPosterAsset = asset('/media/feed-video-frame.png')
 
 const feedContent = {
   title: 'WELCOME TO JURASSIC PARK',
@@ -290,7 +293,7 @@ const expediaCommerceItems: CommerceItem[] = [
     ratingLabel: 'Exceptional',
     reviews: '1,000 reviews',
     cta: 'Book with Expedia',
-    image: '/media/room.jpg',
+    image: asset('/media/room.jpg'),
     imagePosition: 'center center',
   },
   {
@@ -303,7 +306,7 @@ const expediaCommerceItems: CommerceItem[] = [
     reviews: '17 reviews',
     note: 'Free cancellation available',
     cta: 'View with Expedia',
-    image: '/media/oahu-hard-rock-honolulu-photo.jpg',
+    image: asset('/media/oahu-hard-rock-honolulu-photo.jpg'),
     imagePosition: 'center center',
   },
 ]
@@ -311,7 +314,7 @@ const expediaCommerceItems: CommerceItem[] = [
 const hotelDetail = {
   title: 'Mauna Lani, Auberge Collection',
   propertyType: '5-star hotel',
-  heroImage: '/media/be737903725b3c6e0ed744510f02f826.jpg',
+  heroImage: asset('/media/be737903725b3c6e0ed744510f02f826.jpg'),
   heroImageCount: '1/4',
   socialNote: 'VIP Access',
   score: '9.4',
@@ -327,7 +330,7 @@ const hotelDetail = {
     {
       id: 'mauna-lani-room-mountain-view',
       sectionLabel: 'Popular pick',
-      image: '/media/room1.jpg',
+      image: asset('/media/room1.jpg'),
       imageCount: 3,
       title: 'Room, 1 King Bed, Mountain View',
       metaChips: ['Sleeps 3', '1 King Bed', 'Mountain view'],
@@ -345,7 +348,7 @@ const hotelDetail = {
     {
       id: 'mauna-lani-room-partial-ocean-view',
       sectionLabel: 'Upgrade your stay',
-      image: '/media/room2.jpg',
+      image: asset('/media/room2.jpg'),
       imageCount: 4,
       title: 'Room, 1 King Bed, Partial Ocean View',
       metaChips: ['Sleeps 3', '1 King Bed', 'Partial ocean view'],
@@ -364,7 +367,7 @@ const hotelDetail = {
     {
       id: 'mauna-lani-room-accessible-mountain-view',
       sectionLabel: 'Accessible option',
-      image: '/media/room3.jpg',
+      image: asset('/media/room3.jpg'),
       imageCount: 5,
       title: 'Room, 1 King Bed, Hearing Accessible, Mountain View (Mobility Accessible with Tub)',
       metaChips: ['Sleeps 3', '1 King Bed', 'Accessible room'],
@@ -394,7 +397,7 @@ const restaurantShelf = {
 
 const restaurantDetail = {
   city: 'Honolulu',
-  heroImage: '/media/food.jpg',
+  heroImage: asset('/media/food.jpg'),
   heroImageCount: '1/1',
   topLabel: 'Free cancellation available',
   title: 'Dining at Hard Rock Cafe Honolulu',
@@ -706,7 +709,7 @@ const hasExpediaWelcome = (messages: Message[]) =>
   )
 
 function App() {
-  const expediaAvatarAsset = '/media/expedia-avatar.png?v=1'
+  const expediaAvatarAsset = `${asset('/media/expedia-avatar.png')}?v=1`
   const [screen, setScreen] = useState<Screen>('feed')
   const [isLiked, setIsLiked] = useState(false)
   const [hasVideoError, setHasVideoError] = useState(false)
@@ -720,7 +723,7 @@ function App() {
     }
   })
   const [expediaAvatarSrc, setExpediaAvatarSrc] = useState<string | null>(expediaAvatarAsset)
-  const [feedAvatarSrc, setFeedAvatarSrc] = useState('/media/cathy-avatar.png')
+  const [feedAvatarSrc, setFeedAvatarSrc] = useState(asset('/media/cathy-avatar.png'))
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [isHalfPreviewOpen, setIsHalfPreviewOpen] = useState(false)
   const [shareBannerRecipientId, setShareBannerRecipientId] = useState<RecipientId | null>(null)
@@ -1140,6 +1143,12 @@ function App() {
       },
     }))
     queueReply(activeConversationId, { prompt: content, historyMessages: nextMessages })
+  }
+
+  const handleComposerEnter = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    if (chatDraft.trim()) handleSendFromChat()
   }
 
   const handleOpenCommerceDestination = (item: CommerceItem) => {
@@ -2368,6 +2377,7 @@ function App() {
                         onChange={(event) => setChatDraft(event.target.value)}
                         onFocus={() => setIsChatInputFocused(true)}
                         onBlur={() => setIsChatInputFocused(false)}
+                        onKeyDown={handleComposerEnter}
                         placeholder="Message..."
                         aria-label="Message input"
                         enterKeyHint="send"
@@ -2380,15 +2390,6 @@ function App() {
                       </button>
                       <button type="button" className="composer-icon">
                         <MicIcon />
-                      </button>
-                      <button
-                        type="submit"
-                        className={`send-mini business-send ${
-                          chatDraft.trim() || isChatInputFocused || isKeyboardOpen ? 'is-visible' : ''
-                        }`}
-                        disabled={!chatDraft.trim()}
-                      >
-                        Send
                       </button>
                     </form>
                   </div>
@@ -2406,6 +2407,7 @@ function App() {
                     <input
                       value={chatDraft}
                       onChange={(event) => setChatDraft(event.target.value)}
+                      onKeyDown={handleComposerEnter}
                       placeholder="Message..."
                       aria-label="Message input"
                       enterKeyHint="send"
