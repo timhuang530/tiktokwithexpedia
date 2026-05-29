@@ -13,6 +13,8 @@
 }
 
 .phone-frame {
+  --app-height: 844px;
+  --keyboard-inset: 0px;
   --safe-top: 52px;
   --safe-bottom: 18px;
   --safe-left: 0px;
@@ -26,7 +28,7 @@
   --tab-bar-height: 84px;
   --composer-height: 56px;
   width: 390px;
-  height: 844px;
+  height: var(--app-height);
   border-radius: 42px;
   padding: 10px;
   background: linear-gradient(180deg, #242731 0%, #090b10 100%);
@@ -1280,6 +1282,10 @@
   justify-content: center;
 }
 
+.business-send:disabled {
+  opacity: 0.42;
+}
+
 .bottom-nav {
   position: absolute;
   left: 0;
@@ -1667,7 +1673,7 @@
     --chat-composer-side-gap: 10px;
     --chat-composer-bottom: calc(var(--safe-bottom) + 8px);
     width: 100vw;
-    height: 100dvh;
+    height: var(--app-height, 100dvh);
     border-radius: 0;
     padding: 0;
     background: none;
@@ -3847,17 +3853,17 @@
 }
 
 .chat-screen .messages {
-  inset: var(--chat-messages-top) 0 76px 0;
+  inset: var(--chat-messages-top) 0 calc(76px + var(--keyboard-inset)) 0;
 }
 
 .chat-screen .composer {
   left: calc(var(--safe-left) + var(--chat-composer-side-gap));
   right: calc(var(--safe-right) + var(--chat-composer-side-gap));
-  bottom: var(--chat-composer-bottom);
+  bottom: calc(var(--chat-composer-bottom) + var(--keyboard-inset));
 }
 
 .business-messages {
-  inset: var(--business-messages-top) 0 130px 0 !important;
+  inset: var(--business-messages-top) 0 calc(130px + var(--keyboard-inset)) 0 !important;
   padding-top: 14px;
 }
 
@@ -4056,10 +4062,19 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  padding: 8px 10px calc(var(--safe-bottom) + 8px);
+  bottom: var(--keyboard-inset);
+  padding: 8px calc(var(--safe-right) + 10px) calc(var(--safe-bottom) + 8px)
+    calc(var(--safe-left) + 10px);
   background: rgba(255, 255, 255, 0.96);
   border-top: 1px solid #edf0f6;
+}
+
+.phone-frame.is-keyboard-open .business-quick-actions {
+  display: none;
+}
+
+.phone-frame.is-keyboard-open .business-composer-wrap {
+  padding-top: 10px;
 }
 
 .business-quick-actions {
@@ -4110,6 +4125,15 @@
   min-height: 48px;
   padding: 8px 12px;
   box-shadow: none;
+}
+
+.business-composer.is-chat-focused {
+  grid-template-columns: 28px minmax(0, 1fr) 28px auto;
+}
+
+.business-composer.is-chat-focused .composer-avatar-button,
+.business-composer.is-chat-focused .composer-icon:last-of-type {
+  display: none;
 }
 
 .composer-avatar-button {

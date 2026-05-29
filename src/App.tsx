@@ -732,11 +732,14 @@ function App() {
   const [chatDraft, setChatDraft] = useState('')
   const [activeRestaurantDealId, setActiveRestaurantDealId] = useState(restaurantDeals[0].id)
   const [isHotelFavorited, setIsHotelFavorited] = useState(false)
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false)
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false)
   const [conversations, setConversations] =
     useState<Record<RecipientId, Conversation>>(initialConversations)
   const feedVideoRef = useRef<HTMLVideoElement | null>(null)
   const messagesRef = useRef<HTMLElement | null>(null)
   const halfMessagesRef = useRef<HTMLElement | null>(null)
+  const phoneFrameRef = useRef<HTMLDivElement | null>(null)
 
   const activeConversation = conversations[activeConversationId]
   const activeRestaurantDeal =
@@ -812,6 +815,45 @@ function App() {
     isHalfPreviewOpen,
     screen,
   ])
+
+  useEffect(() => {
+    const frame = phoneFrameRef.current
+    if (!frame || typeof window === 'undefined') return
+
+    const viewport = window.visualViewport
+    let stableHeight = Math.max(window.innerHeight, viewport?.height ?? 0)
+
+    const syncViewport = () => {
+      const visualHeight = viewport?.height ?? window.innerHeight
+      const visualOffsetTop = viewport?.offsetTop ?? 0
+      const fullVisibleHeight = visualHeight + visualOffsetTop
+      const keyboardLikelyOpen = stableHeight - fullVisibleHeight > 120
+
+      if (!keyboardLikelyOpen) {
+        stableHeight = Math.max(stableHeight, fullVisibleHeight, window.innerHeight)
+      }
+
+      const keyboardInset = keyboardLikelyOpen ? Math.max(0, stableHeight - fullVisibleHeight) : 0
+
+      frame.style.setProperty('--app-height', `${Math.round(stableHeight)}px`)
+      frame.style.setProperty('--keyboard-inset', `${Math.round(keyboardInset)}px`)
+      setIsKeyboardOpen(keyboardLikelyOpen)
+    }
+
+    syncViewport()
+
+    window.addEventListener('resize', syncViewport)
+    window.addEventListener('orientationchange', syncViewport)
+    viewport?.addEventListener('resize', syncViewport)
+    viewport?.addEventListener('scroll', syncViewport)
+
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+      window.removeEventListener('orientationchange', syncViewport)
+      viewport?.removeEventListener('resize', syncViewport)
+      viewport?.removeEventListener('scroll', syncViewport)
+    }
+  }, [])
 
   const inboxItems = useMemo(
     () =>
@@ -1700,7 +1742,7 @@ function App() {
   return (
     <main className="demo-shell">
       <section className="phone-shell" aria-label="TT-style iOS demo">
-        <div className="phone-frame">
+        <div className={`phone-frame${isKeyboardOpen ? ' is-keyboard-open' : ''}`} ref={phoneFrameRef}>
           <div className="dynamic-island" />
           <div className={`screen screen-${screen}`}>
             <div className={`status-bar ${isDarkChrome ? 'status-on-dark' : 'status-on-light'}`}>
@@ -2310,7 +2352,9 @@ function App() {
                       </button>
                     </div>
                     <form
-                      className="composer business-composer"
+                      className={`composer business-composer ${
+                        isChatInputFocused || isKeyboardOpen ? 'is-chat-focused' : ''
+                      }`}
                       onSubmit={(event) => {
                         event.preventDefault()
                         handleSendFromChat()
@@ -2322,6 +2366,8 @@ function App() {
                       <input
                         value={chatDraft}
                         onChange={(event) => setChatDraft(event.target.value)}
+                        onFocus={() => setIsChatInputFocused(true)}
+                        onBlur={() => setIsChatInputFocused(false)}
                         placeholder="Message..."
                         aria-label="Message input"
                         enterKeyHint="send"
@@ -2335,7 +2381,13 @@ function App() {
                       <button type="button" className="composer-icon">
                         <MicIcon />
                       </button>
-                      <button type="submit" className={`send-mini business-send ${chatDraft.trim() ? 'is-visible' : ''}`}>
+                      <button
+                        type="submit"
+                        className={`send-mini business-send ${
+                          chatDraft.trim() || isChatInputFocused || isKeyboardOpen ? 'is-visible' : ''
+                        }`}
+                        disabled={!chatDraft.trim()}
+                      >
                         Send
                       </button>
                     </form>
