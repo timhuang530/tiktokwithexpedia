@@ -15,6 +15,14 @@
 .phone-frame {
   --safe-top: 52px;
   --safe-bottom: 18px;
+  --safe-left: 0px;
+  --safe-right: 0px;
+  --page-header-top-gap: 6px;
+  --chat-header-height: 98px;
+  --chat-messages-top: 98px;
+  --business-messages-top: 98px;
+  --chat-composer-side-gap: 12px;
+  --chat-composer-bottom: 10px;
   --tab-bar-height: 84px;
   --composer-height: 56px;
   width: 390px;
@@ -545,7 +553,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 58px 16px 12px;
+  padding: calc(var(--safe-top) + var(--page-header-top-gap)) calc(var(--safe-right) + 16px) 12px
+    calc(var(--safe-left) + 16px);
   background: rgba(255, 255, 255, 0.96);
 }
 
@@ -1649,6 +1658,14 @@
   .phone-frame {
     --safe-top: env(safe-area-inset-top);
     --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+    --page-header-top-gap: 6px;
+    --chat-header-height: 66px;
+    --chat-messages-top: 66px;
+    --business-messages-top: 66px;
+    --chat-composer-side-gap: 10px;
+    --chat-composer-bottom: calc(var(--safe-bottom) + 8px);
     width: 100vw;
     height: 100dvh;
     border-radius: 0;
@@ -1667,13 +1684,13 @@
   }
 
   .feed-topbar {
-    top: calc(env(safe-area-inset-top) + 12px);
-    left: 10px;
-    right: 10px;
+    top: calc(var(--safe-top) + 8px);
+    left: calc(var(--safe-left) + 10px);
+    right: calc(var(--safe-right) + 10px);
   }
 
   .feed-title-wrap {
-    top: calc(env(safe-area-inset-top) + 90px);
+    top: calc(var(--safe-top) + 82px);
   }
 
   .feed-meta {
@@ -1697,23 +1714,27 @@
   .friends-header,
   .profile-header,
   .commerce-detail-header {
-    padding-top: calc(env(safe-area-inset-top) + 12px);
+    padding-top: calc(var(--safe-top) + 6px);
+    padding-left: calc(var(--safe-left) + 16px);
+    padding-right: calc(var(--safe-right) + 16px);
   }
 
   .chat-header {
-    min-height: 74px;
+    min-height: 66px;
   }
 
   .messages {
     inset: 72px 0 calc(var(--tab-bar-height) + var(--composer-height) + 18px) 0;
+    padding-left: calc(var(--safe-left) + 16px);
+    padding-right: calc(var(--safe-right) + 16px);
   }
 
   .chat-screen .messages {
-    inset: 74px 0 72px 0;
+    inset: 66px 0 72px 0;
   }
 
   .business-messages {
-    inset: 74px 0 122px 0 !important;
+    inset: 66px 0 122px 0 !important;
   }
 
   .bottom-nav {
@@ -1722,20 +1743,21 @@
   }
 
   .composer {
-    left: 10px;
-    right: 10px;
-    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    left: calc(var(--safe-left) + 10px);
+    right: calc(var(--safe-right) + 10px);
+    bottom: calc(var(--safe-bottom) + 8px);
     min-height: 50px;
     padding: 8px 10px;
     grid-template-columns: 28px minmax(0, 1fr) 28px auto;
   }
 
   .chat-screen .composer {
-    bottom: calc(env(safe-area-inset-bottom) + 8px);
+    bottom: calc(var(--safe-bottom) + 8px);
   }
 
   .business-composer-wrap {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+    padding: 8px calc(var(--safe-right) + 10px) calc(var(--safe-bottom) + 8px)
+      calc(var(--safe-left) + 10px);
   }
 
   .business-composer {
@@ -3492,7 +3514,8 @@
   grid-template-columns: 32px minmax(0, 1fr) 32px;
   align-items: center;
   gap: 12px;
-  padding: 58px 16px 12px;
+  padding: calc(var(--safe-top) + var(--page-header-top-gap)) calc(var(--safe-right) + 16px) 12px
+    calc(var(--safe-left) + 16px);
   border-bottom: 1px solid #edf0f6;
   background: rgba(255, 255, 255, 0.96);
 }
@@ -3819,23 +3842,22 @@
 }
 
 .chat-header {
-  padding-top: 56px;
-  min-height: 98px;
+  min-height: var(--chat-header-height);
   box-sizing: border-box;
 }
 
 .chat-screen .messages {
-  inset: 98px 0 76px 0;
+  inset: var(--chat-messages-top) 0 76px 0;
 }
 
 .chat-screen .composer {
-  left: 12px;
-  right: 12px;
-  bottom: 10px;
+  left: calc(var(--safe-left) + var(--chat-composer-side-gap));
+  right: calc(var(--safe-right) + var(--chat-composer-side-gap));
+  bottom: var(--chat-composer-bottom);
 }
 
 .business-messages {
-  inset: 98px 0 130px 0 !important;
+  inset: var(--business-messages-top) 0 130px 0 !important;
   padding-top: 14px;
 }
 
