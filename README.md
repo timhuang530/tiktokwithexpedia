@@ -1,4 +1,4 @@
-# TTwithExpedia
+# tiktokwithexpedia
 
 TT-style travel demo that combines short-form video sharing with Expedia business chat responses.
 
