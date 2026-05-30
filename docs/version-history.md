@@ -3,6 +3,31 @@
 ## V2.0
 
 - Status: `Current`
+- Date: `2026-05-30`
+- Label: `Delivery Stabilization And Commerce Card Refinement`
+
+- Fixed GitHub Pages asset delivery so the online build resolves media correctly under the repository base path instead of falling back to the domain root
+- Added stronger homepage video playback fallback behavior for GitHub Pages and mobile browsers by retrying autoplay when the page becomes visible, focused, or first receives touch input
+- Added a separate local delivery build path and supporting files so the demo can still be handed off locally without changing the default online deployment flow
+- Improved mobile safe-area and keyboard behavior in chat, removed the extra in-page red send button, and kept the business-chat input aligned with the system keyboard send flow
+- Restyled the shared hotel and dining location cards toward a more message-native three-image layout, and replaced the duplicated dining preview image with the new `public/media/dining.jpg`
+- Fixed the hotel and restaurant detail-page top action buttons so they stay pinned while the hero image and page content scroll underneath
+
+### Notes
+
+- This version is the current documented release for online delivery, local handoff, mobile adaptation, and the latest shared-card/detail-page fidelity pass
+- The homepage video issue on GitHub Pages is now recorded as part of the release scope together with the media base-path fix and autoplay fallback improvements
+- The older hotel-and-restaurant detail milestone is intentionally preserved below as `V1.6` for future reuse
+
+### Next Phase Candidates
+
+- Re-encode the homepage feed video if a specific browser or device still blocks playback after the current autoplay fallback behavior
+- Continue tightening the new message-card composition against the latest target reference if more restaurant imagery or exact UI references are provided
+- Add a formal tag or release snapshot if you want one-click rollback between `V1.6` and `V2.0`
+
+## V1.6
+
+- Status: `Superseded`
 - Date: `2026-05-29`
 - Label: `TT Hotel And Restaurant Detail Completion`
 
@@ -15,7 +40,7 @@
 
 ### Notes
 
-- This version is the current documented baseline for the hotel and restaurant detail experiences
+- This version is preserved as the reusable milestone before the later delivery, Pages, mobile, and message-card refinements
 - The hotel detail page now includes its intended TT-style UI plus the required sharing, favorite, and booking navigation behavior
 - The restaurant detail page now uses the TT-native product-detail structure with Expedia-sourced content and assets
 - The hotel booking destination remains a static visual page with no further interaction, per the current requirement

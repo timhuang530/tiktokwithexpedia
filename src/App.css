@@ -809,12 +809,12 @@
 }
 
 .bubble-commerce {
-  width: min(356px, calc(100vw - 64px));
+  width: min(320px, calc(100vw - 72px));
   max-width: 96%;
-  padding: 12px 10px 12px;
-  border-radius: 26px;
-  background: #f2f4f8;
-  box-shadow: 0 8px 22px rgba(17, 21, 32, 0.05);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .commerce-message-header {
@@ -822,7 +822,7 @@
   flex-direction: column;
   gap: 4px;
   margin-bottom: 10px;
-  padding: 0 6px;
+  padding: 0 4px;
 }
 
 .commerce-message-kicker {
@@ -850,59 +850,110 @@
 }
 
 .commerce-card-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .commerce-card-row.is-single {
-  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .commerce-card {
   width: 100%;
   border: 0;
   padding: 0;
-  border-radius: 18px;
+  border-radius: 24px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 1px 0 rgba(17, 21, 32, 0.05);
+  background: #f3f3f4;
+  box-shadow: 0 1px 0 rgba(17, 21, 32, 0.04);
   color: #111520;
   text-align: left;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 10px;
 }
 
-.commerce-card-media {
-  width: 100%;
-  height: 168px;
-  object-fit: cover;
-  display: block;
-  background: #dfe5ef;
+.commerce-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.commerce-card-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid #d7d8db;
+  background: #fafafb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #10141e;
   flex: 0 0 auto;
 }
 
-.commerce-card-body {
-  padding: 10px 10px 12px;
+.commerce-card-header-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.commerce-card-header-copy {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 2px;
 }
 
 .commerce-card-title {
   display: block;
-  font-size: 12px;
+  font-size: 17px;
   line-height: 1.18;
   font-weight: 700;
   color: #111520;
   letter-spacing: -0.01em;
   display: -webkit-box;
   overflow: hidden;
-  line-clamp: 2;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  min-height: 28px;
+  -webkit-line-clamp: 1;
+}
+
+.commerce-card-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: #70727d;
+}
+
+.commerce-card-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 0 0 0;
+}
+
+.commerce-card-gallery-tile {
+  overflow: hidden;
+  background: #dddfe5;
+}
+
+.commerce-card-gallery-tile:first-child {
+  border-bottom-left-radius: 24px;
+}
+
+.commerce-card-gallery-tile:last-child {
+  border-bottom-right-radius: 24px;
+}
+
+.commerce-card-media {
+  width: 100%;
+  aspect-ratio: 0.84;
+  object-fit: cover;
+  display: block;
+  background: #dfe5ef;
+  flex: 0 0 auto;
 }
 
 .commerce-card-location {
@@ -2370,13 +2421,13 @@
 
 .hotel-hero-topbar {
   position: absolute;
-  top: 56px;
+  top: calc(var(--safe-top) + 12px);
   left: 14px;
   right: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 1;
+  z-index: 5;
 }
 
 .hotel-hero-actions {
@@ -3151,10 +3202,10 @@
 
 .restaurant-detail-hero-topbar {
   position: absolute;
-  top: 56px;
+  top: calc(var(--safe-top) + 12px);
   left: 14px;
   right: 14px;
-  z-index: 1;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;

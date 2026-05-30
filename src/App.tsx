@@ -19,6 +19,7 @@ type CommerceItem = {
   kind: 'hotel' | 'restaurant'
   label: string
   title: string
+  previewTitle?: string
   location?: string
   feature?: string
   rating: string
@@ -27,6 +28,7 @@ type CommerceItem = {
   note?: string
   cta: string
   image: string
+  previewImages: string[]
   imagePosition?: string
 }
 
@@ -288,6 +290,7 @@ const expediaCommerceItems: CommerceItem[] = [
     kind: 'hotel',
     label: 'Stay',
     title: 'Mauna Lani, Auberge Collection',
+    previewTitle: 'Mauna Lani, Auberge Collection',
     location: 'Kamuela',
     feature: 'Pool',
     rating: '9.4',
@@ -295,6 +298,7 @@ const expediaCommerceItems: CommerceItem[] = [
     reviews: '1,000 reviews',
     cta: 'Book with Expedia',
     image: asset('/media/room.jpg'),
+    previewImages: [asset('/media/room1.jpg'), asset('/media/room2.jpg'), asset('/media/room3.jpg')],
     imagePosition: 'center center',
   },
   {
@@ -302,12 +306,18 @@ const expediaCommerceItems: CommerceItem[] = [
     kind: 'restaurant',
     label: 'Eat',
     title: 'Dining at Hard Rock Cafe Honolulu',
+    previewTitle: 'Dining at Hard Rock Cafe Honolulu',
     rating: '9.0',
     ratingLabel: 'Wonderful',
     reviews: '17 reviews',
     note: 'Free cancellation available',
     cta: 'View with Expedia',
     image: asset('/media/oahu-hard-rock-honolulu-photo.jpg'),
+    previewImages: [
+      asset('/media/food.jpg'),
+      asset('/media/oahu-hard-rock-honolulu-photo.jpg'),
+      asset('/media/dining.jpg'),
+    ],
     imagePosition: 'center center',
   },
 ]
@@ -749,6 +759,23 @@ function App() {
   const activeRestaurantDeal =
     restaurantDeals.find((deal) => deal.id === activeRestaurantDealId) ?? restaurantDeals[0]
 
+  const tryPlayFeedVideo = () => {
+    const video = feedVideoRef.current
+    if (!video || hasVideoError) return
+
+    video.muted = true
+    video.defaultMuted = true
+
+    video
+      .play()
+      .then(() => {
+        setIsFeedVideoReady(true)
+      })
+      .catch(() => {
+        // Some mobile browsers still gate autoplay until the page is visible or touched.
+      })
+  }
+
   const captureSharedVideoFrame = (video: HTMLVideoElement) => {
     if (!video.videoWidth || !video.videoHeight || sharedVideoPreviewSrc) return
 
@@ -776,11 +803,29 @@ function App() {
   }, [expediaAvatarAsset])
 
   useEffect(() => {
-    if (!feedVideoRef.current || hasVideoError) return
+    if (hasVideoError) return
 
-    feedVideoRef.current.play().catch(() => {
-      // Mobile browsers may defer autoplay until enough data is buffered.
-    })
+    const replayIfVisible = () => {
+      if (document.visibilityState === 'visible') {
+        tryPlayFeedVideo()
+      }
+    }
+
+    tryPlayFeedVideo()
+
+    document.addEventListener('visibilitychange', replayIfVisible)
+    window.addEventListener('focus', tryPlayFeedVideo)
+    window.addEventListener('pageshow', tryPlayFeedVideo)
+    window.addEventListener('touchstart', tryPlayFeedVideo, { passive: true })
+    window.addEventListener('pointerdown', tryPlayFeedVideo, { passive: true })
+
+    return () => {
+      document.removeEventListener('visibilitychange', replayIfVisible)
+      window.removeEventListener('focus', tryPlayFeedVideo)
+      window.removeEventListener('pageshow', tryPlayFeedVideo)
+      window.removeEventListener('touchstart', tryPlayFeedVideo)
+      window.removeEventListener('pointerdown', tryPlayFeedVideo)
+    }
   }, [hasVideoError])
 
   useEffect(() => {
@@ -1284,37 +1329,32 @@ function App() {
               key={item.id}
               type="button"
               className="commerce-card"
-              aria-label={`${item.title}. ${item.cta}`}
+              aria-label={`${item.title}. ${item.ratingLabel}. ${item.cta}`}
               onClick={() => handleOpenCommerceDestination(item)}
             >
-              <img
-                className="commerce-card-media"
-                src={item.image}
-                alt={item.title}
-                style={{ objectPosition: item.imagePosition ?? 'center center' }}
-              />
-              <div className="commerce-card-body">
-                <strong className="commerce-card-title">{item.title}</strong>
-                <div className="commerce-card-rating">
-                  <span className="commerce-card-score">{item.rating}</span>
-                  <span className="commerce-card-rating-copy">
-                    <strong>{item.ratingLabel}</strong>
-                    <span>{item.reviews}</span>
+              <div className="commerce-card-header">
+                <span className="commerce-card-header-icon">
+                  <LocationBadgeIcon />
+                </span>
+                <span className="commerce-card-header-copy">
+                  <strong className="commerce-card-title">{item.previewTitle ?? item.title}</strong>
+                  <span className="commerce-card-subtitle">
+                    {item.note ?? `${item.ratingLabel} · ${item.reviews}`}
                   </span>
-                </div>
-                {item.location || item.feature || item.note ? (
-                  <div className="commerce-card-meta-stack">
-                    {item.location ? <span className="commerce-card-location">{item.location}</span> : null}
-                    {item.feature ? (
-                      <span className="commerce-card-feature">
-                        <PoolAmenityIcon />
-                        <span>{item.feature}</span>
-                      </span>
-                    ) : null}
-                    {item.note ? <span className="commerce-card-note">{item.note}</span> : null}
-                  </div>
-                ) : null}
-                <span className="commerce-card-cta">{item.cta}</span>
+                </span>
+              </div>
+              <div className="commerce-card-gallery">
+                {item.previewImages.slice(0, 3).map((imageSrc, index) => (
+                  <span key={`${item.id}-preview-${index}`} className="commerce-card-gallery-tile">
+                    <img
+                      className="commerce-card-media"
+                      src={imageSrc}
+                      alt=""
+                      aria-hidden="true"
+                      style={{ objectPosition: item.imagePosition ?? 'center center' }}
+                    />
+                  </span>
+                ))}
               </div>
             </button>
           ))}
@@ -1419,23 +1459,23 @@ function App() {
 
   const renderHotelDetailScreen = () => (
     <div className="commerce-detail-screen hotel-detail-screen">
+      <div className="hotel-hero-topbar">
+        <button type="button" className="hotel-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
+          <BackIcon />
+        </button>
+        <div className="hotel-hero-actions">
+          <button type="button" className="hotel-hero-icon" aria-label="Share" onClick={() => openShareSheet({ kind: 'commerce', message: makeSharedHotelCommerceMessage() }, 'hotel-detail')}>
+            <ShareIcon />
+          </button>
+          <button type="button" className="hotel-hero-icon" aria-label="More">
+            <DotsIcon />
+          </button>
+        </div>
+      </div>
       <section className="hotel-detail-scroll">
         <section className="hotel-hero">
           <img className="hotel-hero-image" src={hotelDetail.heroImage} alt={hotelDetail.title} />
           <div className="hotel-hero-overlay" />
-          <div className="hotel-hero-topbar">
-            <button type="button" className="hotel-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
-              <BackIcon />
-            </button>
-            <div className="hotel-hero-actions">
-              <button type="button" className="hotel-hero-icon" aria-label="Share" onClick={() => openShareSheet({ kind: 'commerce', message: makeSharedHotelCommerceMessage() }, 'hotel-detail')}>
-                <ShareIcon />
-              </button>
-              <button type="button" className="hotel-hero-icon" aria-label="More">
-                <DotsIcon />
-              </button>
-            </div>
-          </div>
           <span className="hotel-hero-count">{hotelDetail.heroImageCount}</span>
         </section>
 
@@ -1625,18 +1665,18 @@ function App() {
 
   const renderRestaurantDetailScreen = () => (
     <div className="commerce-detail-screen restaurant-detail-screen">
+      <div className="restaurant-detail-hero-topbar">
+        <button type="button" className="restaurant-detail-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
+          <BackIcon />
+        </button>
+        <button type="button" className="restaurant-detail-hero-icon" aria-label="More">
+          <DotsIcon />
+        </button>
+      </div>
       <section className="restaurant-detail-scroll">
         <section className="restaurant-detail-hero">
           <img className="restaurant-detail-hero-image" src={restaurantDetail.heroImage} alt={restaurantDetail.title} />
           <div className="restaurant-detail-hero-overlay" />
-          <div className="restaurant-detail-hero-topbar">
-            <button type="button" className="restaurant-detail-hero-icon" onClick={handleCloseCommerceDestination} aria-label="Back">
-              <BackIcon />
-            </button>
-            <button type="button" className="restaurant-detail-hero-icon" aria-label="More">
-              <DotsIcon />
-            </button>
-          </div>
           <span className="restaurant-detail-hero-count">{restaurantDetail.heroImageCount}</span>
         </section>
 
@@ -1792,6 +1832,7 @@ function App() {
                         if (node && node.readyState >= 2) {
                           captureSharedVideoFrame(node)
                           setIsFeedVideoReady(true)
+                          tryPlayFeedVideo()
                         }
                       }}
                       className={`poster-media feed-video ${isFeedVideoReady ? 'is-ready' : ''}`}
@@ -1802,15 +1843,19 @@ function App() {
                       preload="auto"
                       poster={feedPosterSrc ?? feedVideoPosterAsset}
                       onError={() => setHasVideoError(true)}
+                      onLoadedMetadata={() => {
+                        tryPlayFeedVideo()
+                      }}
                       onLoadedData={(event) => {
                         captureSharedVideoFrame(event.currentTarget)
                         setIsFeedVideoReady(true)
+                        tryPlayFeedVideo()
                       }}
                       onCanPlay={(event) => {
                         setIsFeedVideoReady(true)
-                        event.currentTarget.play().catch(() => {
-                          // Ignore autoplay rejections and keep the first frame visible.
-                        })
+                        event.currentTarget.muted = true
+                        event.currentTarget.defaultMuted = true
+                        tryPlayFeedVideo()
                       }}
                     >
                       <source src={feedVideoAsset} type="video/mp4" />
@@ -2782,33 +2827,6 @@ function HeartIcon({ filled }: { filled: boolean }) {
         d="M12 21.3c-.25 0-.49-.08-.69-.23-1.2-.92-7.21-5.59-8.19-10.21C2.37 7.37 4.62 4 8.04 4c1.75 0 3.17.78 3.96 2.02C12.79 4.78 14.21 4 15.96 4c3.42 0 5.67 3.37 4.92 6.86-.98 4.62-6.99 9.29-8.19 10.21-.2.15-.44.23-.69.23Z"
         fill="currentColor"
       />
-    </svg>
-  )
-}
-
-function PoolAmenityIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M2.2 10.6c1 0 1-.6 2-.6s1 .6 2 .6 1-.6 2-.6 1 .6 2 .6 1-.6 2-.6 1 .6 2 .6"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M3.2 7.8c.8 0 .8-.5 1.6-.5s.8.5 1.6.5.8-.5 1.6-.5.8.5 1.6.5.8-.5 1.6-.5.8.5 1.6.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6.1 3.4 8 2l1.9 1.4"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M8 2v3.1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   )
 }
