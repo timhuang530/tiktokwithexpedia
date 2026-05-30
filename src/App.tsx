@@ -144,7 +144,8 @@ const quickMessages = [
 
 const reactionEmojis = ['🥰', '👍', '😂', '😎', '🥺', '🙏']
 const isLocalFileMode = import.meta.env.VITE_LOCAL_FILE_MODE === 'true'
-const asset = (path: string) => (isLocalFileMode ? `.${path}` : path)
+const asset = (path: string) =>
+  isLocalFileMode ? `.${path}` : `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
 const feedVideoAsset = asset('/media/feed-video-faststart.mp4')
 const feedVideoPosterAsset = asset('/media/feed-video-frame.png')
 
