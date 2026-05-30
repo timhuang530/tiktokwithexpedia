@@ -1365,26 +1365,26 @@ function App() {
 
   const renderHotelBookingScreen = () => (
     <div className="commerce-detail-screen hotel-booking-screen">
+      <div className="hotel-booking-topbar">
+        <button type="button" className="hotel-booking-icon" onClick={() => setScreen('hotel-detail')} aria-label="Back">
+          <BackIcon />
+        </button>
+        <div className="hotel-booking-actions" aria-hidden="true">
+          <button type="button" className="hotel-booking-icon" aria-label="Share">
+            <ShareIcon />
+          </button>
+          <button type="button" className="hotel-booking-icon" aria-label="Notifications">
+            <BellIcon />
+          </button>
+          <button type="button" className="hotel-booking-icon is-favorite" aria-label="Favorite">
+            <HeartIcon filled />
+          </button>
+        </div>
+      </div>
       <section className="hotel-booking-scroll">
         <section className="hotel-booking-hero">
           <img className="hotel-booking-hero-image" src={hotelDetail.heroImage} alt={hotelDetail.title} />
           <div className="hotel-booking-overlay" />
-          <div className="hotel-booking-topbar">
-            <button type="button" className="hotel-booking-icon" onClick={() => setScreen('hotel-detail')} aria-label="Back">
-              <BackIcon />
-            </button>
-            <div className="hotel-booking-actions" aria-hidden="true">
-              <button type="button" className="hotel-booking-icon" aria-label="Share">
-                <ShareIcon />
-              </button>
-              <button type="button" className="hotel-booking-icon" aria-label="Notifications">
-                <BellIcon />
-              </button>
-              <button type="button" className="hotel-booking-icon is-favorite" aria-label="Favorite">
-                <HeartIcon filled />
-              </button>
-            </div>
-          </div>
           <div className="hotel-booking-gallery-ui" aria-hidden="true">
             <span className="hotel-booking-gallery-dots">
               <span className="is-active" />

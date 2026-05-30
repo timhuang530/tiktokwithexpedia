@@ -2994,7 +2994,7 @@
 
 .hotel-booking-topbar {
   position: absolute;
-  top: 56px;
+  top: calc(var(--safe-top) + 12px);
   left: 14px;
   right: 14px;
   z-index: 1;
