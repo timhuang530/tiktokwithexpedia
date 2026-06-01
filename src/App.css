@@ -1901,8 +1901,7 @@
     grid-template-columns: 28px minmax(0, 1fr) 28px 28px auto;
   }
 
-  .business-composer .composer-avatar-button,
-  .business-composer .composer-icon:last-of-type {
+  .business-composer .composer-avatar-button {
     display: none;
   }
 
@@ -4249,18 +4248,75 @@
   left: auto;
   right: auto;
   bottom: auto;
-  grid-template-columns: 28px minmax(0, 1fr) 28px 28px 28px;
-  min-height: 48px;
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 6px 6px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
 }
 
 .business-composer.is-chat-focused {
-  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 10px;
 }
 
-.business-composer.is-chat-focused .composer-avatar-button,
-.business-composer.is-chat-focused .composer-icon:last-of-type {
+.business-camera-button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #050608;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.business-camera-button svg {
+  width: 28px;
+  height: 28px;
+}
+
+.business-input-shell {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 50px;
+  padding: 0 12px 0 16px;
+  border-radius: 999px;
+  background: #f3f3f5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.business-input-shell input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.business-tool-button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #050608;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.business-tool-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.business-composer.is-chat-focused .business-tool-button:not(:last-child) {
   display: none;
 }
 
@@ -4297,9 +4353,9 @@
 }
 
 .friend-quick-actions > button {
-  height: 32px;
-  min-width: 44px;
-  padding: 0 12px;
+  width: 58px;
+  height: 46px;
+  padding: 0;
   border: 0;
   border-radius: 999px;
   background: #f4f4f5;
@@ -4317,9 +4373,19 @@
   left: auto;
   right: auto;
   bottom: auto;
-  min-height: 48px;
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 6px 6px 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
+}
+
+.friend-input-shell {
+  background: #f1f3f8;
 }
 
 .composer-avatar-button {

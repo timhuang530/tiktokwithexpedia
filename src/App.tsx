@@ -2794,28 +2794,30 @@ function App() {
                         handleSendFromChat()
                       }}
                     >
-                      <button type="button" className="composer-icon">
+                      <button type="button" className="business-camera-button" aria-label="Camera">
                         <CameraIcon />
                       </button>
-                      <input
-                        value={chatDraft}
-                        onChange={(event) => setChatDraft(event.target.value)}
-                        onFocus={() => setIsChatInputFocused(true)}
-                        onBlur={() => setIsChatInputFocused(false)}
-                        onKeyDown={handleComposerEnter}
-                        placeholder="Message..."
-                        aria-label="Message input"
-                        enterKeyHint="send"
-                      />
-                      <button type="button" className="composer-icon">
-                        <ImageIcon />
-                      </button>
-                      <button type="button" className="composer-avatar-button" aria-label="Profile sticker">
-                        {renderRecipientAvatar('feed')}
-                      </button>
-                      <button type="button" className="composer-icon">
-                        <MicIcon />
-                      </button>
+                      <div className="business-input-shell">
+                        <input
+                          value={chatDraft}
+                          onChange={(event) => setChatDraft(event.target.value)}
+                          onFocus={() => setIsChatInputFocused(true)}
+                          onBlur={() => setIsChatInputFocused(false)}
+                          onKeyDown={handleComposerEnter}
+                          placeholder="Message..."
+                          aria-label="Message input"
+                          enterKeyHint="send"
+                        />
+                        <button type="button" className="business-tool-button" aria-label="Photos">
+                          <ImageIcon />
+                        </button>
+                        <button type="button" className="business-tool-button" aria-label="Effects">
+                          <EffectsIcon />
+                        </button>
+                        <button type="button" className="business-tool-button" aria-label="Voice input">
+                          <MicIcon />
+                        </button>
+                      </div>
                     </form>
                   </div>
                 ) : (
@@ -2834,23 +2836,28 @@ function App() {
                         handleSendFromChat()
                       }}
                     >
-                      <button type="button" className="composer-icon">
+                      <button type="button" className="business-camera-button" aria-label="Camera">
                         <CameraIcon />
                       </button>
-                      <input
-                        value={chatDraft}
-                        onChange={(event) => setChatDraft(event.target.value)}
-                        onKeyDown={handleComposerEnter}
-                        placeholder="Message..."
-                        aria-label="Message input"
-                        enterKeyHint="send"
-                      />
-                      <button type="button" className="composer-icon">
-                        <ImageIcon />
-                      </button>
-                      <button type="submit" className="send-mini">
-                        Send
-                      </button>
+                      <div className="business-input-shell friend-input-shell">
+                        <input
+                          value={chatDraft}
+                          onChange={(event) => setChatDraft(event.target.value)}
+                          onKeyDown={handleComposerEnter}
+                          placeholder="Message..."
+                          aria-label="Message input"
+                          enterKeyHint="send"
+                        />
+                        <button type="button" className="business-tool-button" aria-label="Photos">
+                          <ImageIcon />
+                        </button>
+                        <button type="button" className="business-tool-button" aria-label="Effects">
+                          <EffectsIcon />
+                        </button>
+                        <button type="button" className="business-tool-button" aria-label="Voice input">
+                          <MicIcon />
+                        </button>
+                      </div>
                     </form>
                   </div>
                 )}
@@ -3732,21 +3739,6 @@ function PlaySolidIcon() {
   )
 }
 
-function MicIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M12 15.2a3.2 3.2 0 0 0 3.2-3.2V8.2A3.2 3.2 0 0 0 12 5a3.2 3.2 0 0 0-3.2 3.2V12a3.2 3.2 0 0 0 3.2 3.2Zm0 0v3.1m-4.7-6.1a4.7 4.7 0 1 0 9.4 0"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 function EffectsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -3755,6 +3747,21 @@ function EffectsIcon() {
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 15.2a3.2 3.2 0 0 0 3.2-3.2V8.2A3.2 3.2 0 0 0 12 5a3.2 3.2 0 0 0-3.2 3.2V12a3.2 3.2 0 0 0 3.2 3.2Zm0 0v3.1m-4.7-6.1a4.7 4.7 0 1 0 9.4 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
