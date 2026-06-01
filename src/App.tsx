@@ -145,6 +145,8 @@ const quickMessages = [
 ]
 
 const reactionEmojis = ['🥰', '👍', '😂', '😎', '🥺', '🙏']
+const businessQuickReplies = ['Learn more'] as const
+const friendQuickEmojis = ['❤️', '😂', '👍', '🥺']
 const isLocalFileMode = import.meta.env.VITE_LOCAL_FILE_MODE === 'true'
 const asset = (path: string) =>
   isLocalFileMode ? `.${path}` : `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`
@@ -1173,11 +1175,11 @@ function App() {
     })
   }
 
-  const handleSendFromChat = () => {
-    if (!chatDraft.trim()) return
+  const sendChatMessage = (content: string) => {
+    const trimmedContent = content.trim()
+    if (!trimmedContent) return
 
-    const content = chatDraft.trim()
-    const nextMessages = [...conversations[activeConversationId].messages, makeTextMessage(content, 'me')]
+    const nextMessages = [...conversations[activeConversationId].messages, makeTextMessage(trimmedContent, 'me')]
     setChatDraft('')
     setConversations((current) => ({
       ...current,
@@ -1188,13 +1190,26 @@ function App() {
         messages: nextMessages,
       },
     }))
-    queueReply(activeConversationId, { prompt: content, historyMessages: nextMessages })
+    queueReply(activeConversationId, { prompt: trimmedContent, historyMessages: nextMessages })
+  }
+
+  const handleSendFromChat = () => {
+    if (!chatDraft.trim()) return
+    sendChatMessage(chatDraft)
   }
 
   const handleComposerEnter = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter') return
     event.preventDefault()
     if (chatDraft.trim()) handleSendFromChat()
+  }
+
+  const handleBusinessQuickReply = (label: (typeof businessQuickReplies)[number]) => {
+    sendChatMessage(label)
+  }
+
+  const handleFriendQuickEmoji = (emoji: string) => {
+    sendChatMessage(emoji)
   }
 
   const handleOpenCommerceDestination = (item: CommerceItem) => {
@@ -2230,7 +2245,10 @@ function App() {
                   </button>
                 </header>
 
-                <section className={`messages ${isBusinessChat ? 'business-messages' : ''}`} ref={messagesRef}>
+                <section
+                  className={`messages ${isBusinessChat ? 'business-messages' : 'friend-messages'}`}
+                  ref={messagesRef}
+                >
                   {isBusinessChat && (
                     <p className="business-chat-notice">
                       <span>You opened this chat with Expedia. </span>
@@ -2394,17 +2412,16 @@ function App() {
                 {isBusinessChat ? (
                   <div className="business-composer-wrap">
                     <div className="business-quick-actions">
-                      <button type="button">❤️</button>
-                      <button type="button">😂</button>
-                      <button type="button">👍</button>
-                      <button type="button" className="quick-pill">
-                        <EffectsIcon />
-                        <span>Effects</span>
-                      </button>
-                      <button type="button" className="quick-pill">
-                        <CardsIcon />
-                        <span>Cards</span>
-                      </button>
+                      {businessQuickReplies.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          className="business-text-action"
+                          onClick={() => handleBusinessQuickReply(item)}
+                        >
+                          {item}
+                        </button>
+                      ))}
                     </div>
                     <form
                       className={`composer business-composer ${
@@ -2440,31 +2457,40 @@ function App() {
                     </form>
                   </div>
                 ) : (
-                  <form
-                    className="composer"
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      handleSendFromChat()
-                    }}
-                  >
-                    <button type="button" className="composer-icon">
-                      <CameraIcon />
-                    </button>
-                    <input
-                      value={chatDraft}
-                      onChange={(event) => setChatDraft(event.target.value)}
-                      onKeyDown={handleComposerEnter}
-                      placeholder="Message..."
-                      aria-label="Message input"
-                      enterKeyHint="send"
-                    />
-                    <button type="button" className="composer-icon">
-                      <ImageIcon />
-                    </button>
-                    <button type="submit" className="send-mini">
-                      Send
-                    </button>
-                  </form>
+                  <div className="friend-composer-wrap">
+                    <div className="friend-quick-actions">
+                      {friendQuickEmojis.map((emoji) => (
+                        <button key={emoji} type="button" onClick={() => handleFriendQuickEmoji(emoji)}>
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    <form
+                      className="composer friend-composer"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        handleSendFromChat()
+                      }}
+                    >
+                      <button type="button" className="composer-icon">
+                        <CameraIcon />
+                      </button>
+                      <input
+                        value={chatDraft}
+                        onChange={(event) => setChatDraft(event.target.value)}
+                        onKeyDown={handleComposerEnter}
+                        placeholder="Message..."
+                        aria-label="Message input"
+                        enterKeyHint="send"
+                      />
+                      <button type="button" className="composer-icon">
+                        <ImageIcon />
+                      </button>
+                      <button type="submit" className="send-mini">
+                        Send
+                      </button>
+                    </form>
+                  </div>
                 )}
               </div>
             )}
@@ -3351,15 +3377,6 @@ function MicIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
-  )
-}
-
-function CardsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="5" y="6" width="8.5" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <rect x="10.5" y="7" width="8.5" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
     </svg>
   )
 }

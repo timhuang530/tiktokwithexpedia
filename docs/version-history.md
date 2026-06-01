@@ -1,8 +1,31 @@
 # Version History
 
-## V2.0
+## V2.1
 
 - Status: `Current`
+- Date: `2026-05-30`
+- Label: `Chat Quick Actions And Booking Control Pinning`
+
+- Fixed the hotel booking screen top action bar so the back and utility controls stay pinned while the hero image and booking content scroll
+- Refined the Expedia business-chat quick menu into a single `Learn more` text action above the composer to better match the latest commercial-account reference
+- Kept the `Learn more` action wired into the existing conversation flow so tapping it still behaves like the current Expedia chat instead of switching to a new scripted response path
+- Added interactive emoji quick replies above the normal friend composer so the shortcut row is now tappable without changing the regular friend-chat visual direction
+
+### Notes
+
+- This version becomes the current documented baseline for the latest chat-input refinement pass
+- The business-account composer and the normal friend composer now intentionally diverge in shortcut style, matching the latest requirement split
+- `V2.0` remains preserved directly below as the delivery, Pages, playback, and shared-card stabilization milestone
+
+### Next Phase Candidates
+
+- Continue tightening the Expedia business-chat composer hierarchy against the latest commercial-account reference if more exact spacing or copy changes are provided
+- Decide whether friend quick emojis should append into the draft first or keep the current one-tap send behavior
+- Add lightweight pressed-state feedback to quick actions if the interaction needs to feel closer to native TT chat
+
+## V2.0
+
+- Status: `Superseded`
 - Date: `2026-05-30`
 - Label: `Delivery Stabilization And Commerce Card Refinement`
 

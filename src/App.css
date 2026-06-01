@@ -3901,6 +3901,10 @@
   padding-top: 14px;
 }
 
+.friend-messages {
+  inset: var(--chat-messages-top) 0 calc(122px + var(--keyboard-inset)) 0 !important;
+}
+
 .business-profile-card {
   display: flex;
   flex-direction: column;
@@ -4130,7 +4134,7 @@
   border: 0;
   border-radius: 999px;
   background: #f4f4f5;
-  font-size: 22px;
+  font-size: 14px;
   line-height: 1;
   color: #111520;
   display: inline-flex;
@@ -4139,15 +4143,8 @@
   flex: 0 0 auto;
 }
 
-.quick-pill {
-  gap: 6px;
-  font-size: 14px !important;
-  font-weight: 600;
-}
-
-.quick-pill svg {
-  width: 18px;
-  height: 18px;
+.business-text-action {
+  font-weight: 500;
 }
 
 .business-composer {
@@ -4168,6 +4165,64 @@
 .business-composer.is-chat-focused .composer-avatar-button,
 .business-composer.is-chat-focused .composer-icon:last-of-type {
   display: none;
+}
+
+.friend-composer-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--keyboard-inset);
+  padding: 8px calc(var(--safe-right) + 10px) calc(var(--safe-bottom) + 8px)
+    calc(var(--safe-left) + 10px);
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #edf0f6;
+}
+
+.phone-frame.is-keyboard-open .friend-quick-actions {
+  display: none;
+}
+
+.phone-frame.is-keyboard-open .friend-composer-wrap {
+  padding-top: 10px;
+}
+
+.friend-quick-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 0 4px 10px;
+  scrollbar-width: none;
+}
+
+.friend-quick-actions::-webkit-scrollbar {
+  display: none;
+}
+
+.friend-quick-actions > button {
+  height: 32px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #f4f4f5;
+  font-size: 22px;
+  line-height: 1;
+  color: #111520;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.friend-composer {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  min-height: 48px;
+  padding: 8px 12px;
+  box-shadow: none;
 }
 
 .composer-avatar-button {
