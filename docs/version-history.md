@@ -1,8 +1,33 @@
 # Version History
 
-## V2.1
+## V2.2
 
 - Status: `Current`
+- Date: `2026-05-30`
+- Label: `Expedia Guided Choice Flow Upgrade`
+
+- Reworked the Expedia feed-share journey into a guided confirmation flow that mixes scripted welcome copy, choice-based branching, and follow-up recommendation delivery
+- Added a new Expedia in-chat choice-message model so the business chat can ask structured follow-up questions with tappable `Yes / No` style options
+- Split the guided flow into mixed interaction modes, keeping some steps as card-style choices while moving the trip-length question into a lighter text-chain option list
+- Updated selected choice states so answered prompts collapse back into normal message questions instead of staying as bold interactive cards
+- Added alternate text-input handling so users can type responses like `yes`, `no`, or `2 days` and still continue through the same Expedia guided branch logic without tapping
+- Kept `Learn more` wired to the fixed default Expedia welcome message instead of the general AI fallback response
+
+### Notes
+
+- This version becomes the current documented baseline for the Expedia guided-choice conversation system
+- The guided flow now supports both tap-based and text-based answering, which keeps the demo resilient even when users skip the provided buttons
+- The current mixed-mode approach intentionally uses both card links and lighter text links so different Expedia questions can feel closer to the target reference
+
+### Next Phase Candidates
+
+- Expand text-intent recognition beyond simple `yes / no / 2 days` patterns into more natural freeform phrases such as `I want 3 days` or `No hotel needed`
+- Continue tuning which Expedia questions should stay as card choices versus lighter text-link prompts based on the final target interaction style
+- Add more destination-specific guided branches if future feed videos need their own dedicated Expedia scripting packages
+
+## V2.1
+
+- Status: `Superseded`
 - Date: `2026-05-30`
 - Label: `Chat Quick Actions And Booking Control Pinning`
 

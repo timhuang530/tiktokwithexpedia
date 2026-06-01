@@ -32,6 +32,13 @@ type CommerceItem = {
   imagePosition?: string
 }
 
+type ExpediaChoiceStage =
+  | 'visit-interest'
+  | 'itinerary-interest'
+  | 'trip-length'
+  | 'hotel-interest'
+  | 'restaurant-interest'
+
 type Message =
   | {
       id: string
@@ -65,11 +72,22 @@ type Message =
       items: CommerceItem[]
       hideHeader?: boolean
     }
+  | {
+      id: string
+      type: 'choice-card'
+      sender: 'them'
+      stage: ExpediaChoiceStage
+      prompt: string
+      options: string[]
+      selectedOption?: string
+      display?: 'card' | 'text'
+    }
 
 type IncomingMessage =
   | (Extract<Message, { type: 'text' }> & { sender: 'them' })
   | Extract<Message, { type: 'plan' }>
   | (Extract<Message, { type: 'commerce-group' }> & { sender: 'them' })
+  | Extract<Message, { type: 'choice-card' }>
 
 type SharePayload =
   | {
@@ -283,8 +301,23 @@ const expediaWelcomeMessage =
 const expediaTravelBriefMessage =
   '【Your Exclusive Jurassic Adventure · Travel Brief】\nDestination Overview:\nAloha, and welcome to Kualoa Ranch on Oahu, Hawaii, the real-life filming location for "Jurassic Park." This destination combines the iconic valleys and jungle backdrops seen in the film with some of the island\'s most spectacular natural scenery. For transportation, travelers can fly into Honolulu International Airport (HNL) and reach the ranch in about one hour by rental car from the airport or the Waikiki area. For accommodations, staying in Waikiki is highly recommended thanks to its wide range of hotels, restaurants, shopping, and convenient access to the rest of Oahu.'
 
-const expediaItineraryMessage =
+const expediaTwoDayItineraryMessage =
+  'Suggested Itinerary:\nDay 1: Arrival in Waikiki\nArrive on Oahu, check into your Waikiki hotel, and keep the first day light with a beach walk, sunset views, and an easy dinner near the hotel.\nDay 2: Kualoa Ranch Adventure\nSpend your main day at Kualoa Ranch with the Hollywood Movie Tour and one signature adventure like the ATV or UTV ride. If you have a late flight, head back to Honolulu after dinner. If not, enjoy one more relaxed night in Waikiki.'
+
+const expediaThreeDayItineraryMessage =
   'Suggested Itinerary:\nDay 1: Arrival & Acclimation\nArrive on Oahu and check into your hotel in Waikiki. Spend the afternoon unwinding on Waikiki Beach, enjoying the Hawaiian sun and sea breeze, then head out for a relaxed dinner featuring local island flavors.\nDay 2: Core Jurassic Exploration\nSet aside the full day for Kualoa Ranch. In the morning, join the Hollywood Movie Tour for a guided ride into the famous valley landscapes featured in "Jurassic Park." In the afternoon, the ATV or UTV tour is a standout experience, giving you the chance to explore the dramatic Ka\'a\'awa Valley with an adventurous, cinematic feel.\nDay 3: Farewell Journey\nOn your final morning, choose between a visit to the Pearl Harbor Historic Sites or a hike up Diamond Head for sweeping views across the Waikiki coastline. In the afternoon, return to the airport and wrap up an unforgettable Oahu getaway inspired by one of cinema\'s most iconic adventure settings.'
+
+const expediaFourDayItineraryMessage =
+  'Suggested Itinerary:\nDay 1: Arrival & Waikiki Reset\nArrive on Oahu, check into your Waikiki hotel, and ease into the trip with an oceanfront walk, casual shopping, and dinner near the beach.\nDay 2: Kualoa Ranch Signature Day\nDedicate the full day to Kualoa Ranch. Start with the Hollywood Movie Tour, then add an ATV or UTV ride to explore the dramatic Jurassic landscapes in more depth.\nDay 3: Scenic Oahu Add-On\nUse the extra day for a flexible island loop with options like the North Shore, Halona Blowhole, or a slower beach day back in Waikiki, depending on the pace you want.\nDay 4: Final Views & Departure\nWrap up the trip with a short morning outing such as Diamond Head or a final beach stop, then head to the airport for departure.'
+
+const expediaVisitInterestPrompt = 'Would you like to visit Kualoa Ranch on Oahu for this trip?'
+const expediaItineraryInterestPrompt = 'Would you like a day-by-day itinerary for this trip?'
+const expediaHotelInterestPrompt = 'Would you like hotel recommendations for this trip?'
+const expediaRestaurantInterestPrompt = 'Would you also like restaurant recommendations for this trip?'
+const expediaShareFallbackMessage =
+  'Send us your favorite travel Vedio. We’ll turn it into a travel plan with itinerary ideas + hotel & flight picks.'
+const expediaAnytimeSupportMessage =
+  'If you need anything else for this trip, feel free to message Expedia anytime.'
 
 const expediaCommerceItems: CommerceItem[] = [
   {
@@ -493,11 +526,18 @@ const restaurantDeals = [
   },
 ]
 
-const isExpediaScriptMessage = (content: string) =>
-  content === expediaFeedWelcomeMessage ||
-  content === expediaWelcomeMessage ||
-  content === expediaTravelBriefMessage ||
-  content === expediaItineraryMessage
+const expediaScriptMessages = new Set([
+  expediaFeedWelcomeMessage,
+  expediaWelcomeMessage,
+  expediaTravelBriefMessage,
+  expediaTwoDayItineraryMessage,
+  expediaThreeDayItineraryMessage,
+  expediaFourDayItineraryMessage,
+  expediaShareFallbackMessage,
+  expediaAnytimeSupportMessage,
+])
+
+const isExpediaScriptMessage = (content: string) => expediaScriptMessages.has(content)
 
 const splitBusinessParagraphs = (line: string) => {
   const sentences =
@@ -604,6 +644,21 @@ const makeSharedHotelCommerceMessage = (): Extract<Message, { type: 'commerce-gr
     hideHeader: true,
   })
 
+const makeChoiceCardMessage = (
+  stage: ExpediaChoiceStage,
+  prompt: string,
+  options: string[],
+  display: 'card' | 'text' = 'card',
+): Extract<Message, { type: 'choice-card' }> => ({
+  id: `choice-${stage}-${Date.now()}`,
+  type: 'choice-card',
+  sender: 'them',
+  stage,
+  prompt,
+  options,
+  display,
+})
+
 const getShareDraftDefault = (recipientId: RecipientId, payload: SharePayload) => {
   if (payload.kind === 'commerce') {
     return recipientId === 'expedia' ? 'Can you book this hotel?' : 'Would you stay here?'
@@ -651,6 +706,15 @@ const serializeMessageForAi = (message: Message): AiChatMessage | null => {
     }
   }
 
+  if (message.type === 'choice-card') {
+    return {
+      role: 'assistant',
+      content: `${message.prompt}\nOptions: ${message.options.join(' | ')}${
+        message.selectedOption ? `\nSelected: ${message.selectedOption}` : ''
+      }`,
+    }
+  }
+
   return {
     role: 'assistant',
     content: `${message.intro}\nTransport: ${message.transport.join(' | ')}\nItinerary: ${message.itinerary.join(' | ')}`,
@@ -663,20 +727,6 @@ const getLatestSharedVideoMessage = (messages: Message[]) => {
   )
 
   return sharedMessages.at(-1) ?? null
-}
-
-const countMatchingSharedVideoMessages = (
-  messages: Message[],
-  target: Extract<Message, { type: 'shared-video' }> | null,
-) => {
-  if (!target) return 0
-
-  return messages.filter(
-    (message) =>
-      message.type === 'shared-video' &&
-      message.location === target.location &&
-      message.caption === target.caption,
-  ).length
 }
 
 const buildAiConversation = (
@@ -953,14 +1003,299 @@ function App() {
     })
   }
 
-  const queueCommerceFollowUp = (recipientId: RecipientId, typingDelay: number, messageDelay: number) => {
+  const appendConversationMessages = (
+    recipientId: RecipientId,
+    messages: IncomingMessage[],
+    subtitle: string,
+  ) => {
+    setConversations((current) => {
+      const conversation = current[recipientId]
+      const isConversationVisible = screen === 'chat' && activeConversationId === recipientId
+
+      return {
+        ...current,
+        [recipientId]: {
+          ...conversation,
+          status: 'idle',
+          subtitle,
+          unreadCount: conversation.unreadCount + (isConversationVisible ? 0 : messages.length),
+          messages: [...conversation.messages, ...messages],
+        },
+      }
+    })
+  }
+
+  const queueIncomingMessage = (
+    recipientId: RecipientId,
+    typingDelay: number,
+    messageDelay: number,
+    message: IncomingMessage,
+    subtitle: string,
+  ) => {
     window.setTimeout(() => {
       setConversationStatus(recipientId, 'typing', 'Typing...')
     }, typingDelay)
 
     window.setTimeout(() => {
-      appendConversationMessage(recipientId, makeCommerceMessage(), 'Stay and dining picks')
+      appendConversationMessage(recipientId, message, subtitle)
     }, messageDelay)
+  }
+
+  const queueIncomingMessages = (
+    recipientId: RecipientId,
+    typingDelay: number,
+    messageDelay: number,
+    messages: IncomingMessage[],
+    subtitle: string,
+  ) => {
+    window.setTimeout(() => {
+      setConversationStatus(recipientId, 'typing', 'Typing...')
+    }, typingDelay)
+
+    window.setTimeout(() => {
+      appendConversationMessages(recipientId, messages, subtitle)
+    }, messageDelay)
+  }
+
+  const queueExpediaShareFlow = (historyMessages: Message[]) => {
+    const latestSharedVideo = getLatestSharedVideoMessage(historyMessages)
+    const visitPrompt = latestSharedVideo?.location
+      ? `Would you like to visit ${latestSharedVideo.location} on Oahu for this trip?`
+      : expediaVisitInterestPrompt
+
+    queueIncomingMessage(
+      'expedia',
+      500,
+      1500,
+      makeTextMessage(expediaFeedWelcomeMessage, 'them'),
+      '✈️ Welcome to Expedia Trip Matching 🏝️',
+    )
+    queueIncomingMessage(
+      'expedia',
+      2300,
+      3300,
+      makeChoiceCardMessage('visit-interest', visitPrompt, ['Yes', 'No']),
+      'Trip interest',
+    )
+  }
+
+  const queueExpediaAfterTravelBrief = () => {
+    queueIncomingMessage(
+      'expedia',
+      400,
+      1300,
+      makeChoiceCardMessage('itinerary-interest', expediaItineraryInterestPrompt, ['Yes', 'No']),
+      'Itinerary options',
+    )
+  }
+
+  const queueExpediaAfterHotelCard = () => {
+    queueIncomingMessage(
+      'expedia',
+      400,
+      1300,
+      makeChoiceCardMessage('restaurant-interest', expediaRestaurantInterestPrompt, ['Yes', 'No']),
+      'Restaurant options',
+    )
+  }
+
+  const getLatestPendingExpediaChoice = (messages: Message[]) =>
+    [...messages]
+      .reverse()
+      .find(
+        (message): message is Extract<Message, { type: 'choice-card' }> =>
+          message.type === 'choice-card' && !message.selectedOption,
+      ) ?? null
+
+  const resolveExpediaChoiceFromText = (
+    stage: ExpediaChoiceStage,
+    text: string,
+  ): string | null => {
+    const normalized = text.trim().toLowerCase()
+
+    if (!normalized) return null
+
+    if (stage === 'trip-length') {
+      if (/^(2|2 days|two|two days)$/.test(normalized)) return '2 Days'
+      if (/^(3|3 days|three|three days)$/.test(normalized)) return '3 Days'
+      if (/^(4|4 days|four|four days)$/.test(normalized)) return '4 Days'
+      return null
+    }
+
+    if (/^(yes|y|yeah|yep|sure|ok|okay|please do|sounds good|go ahead)$/.test(normalized)) {
+      return 'Yes'
+    }
+
+    if (/^(no|n|nope|not now|maybe later|skip|no thanks)$/.test(normalized)) {
+      return 'No'
+    }
+
+    return null
+  }
+
+  const advanceExpediaChoiceFlow = (stage: ExpediaChoiceStage, option: string) => {
+    if (stage === 'visit-interest') {
+      if (option === 'Yes') {
+        queueIncomingMessages(
+          'expedia',
+          500,
+          1600,
+          [makeTextMessage(expediaTravelBriefMessage, 'them')],
+          'Destination Overview',
+        )
+        window.setTimeout(() => {
+          queueExpediaAfterTravelBrief()
+        }, 1800)
+      } else {
+        queueIncomingMessage(
+          'expedia',
+          400,
+          1200,
+          makeTextMessage(expediaShareFallbackMessage, 'them'),
+          'Send us your favorite travel video',
+        )
+      }
+
+      return
+    }
+
+    if (stage === 'itinerary-interest') {
+      if (option === 'Yes') {
+        queueIncomingMessage(
+          'expedia',
+          400,
+          1300,
+          makeChoiceCardMessage('trip-length', 'How many days would you like this trip to be?', [
+            '2 Days',
+            '3 Days',
+            '4 Days',
+          ], 'text'),
+          'Trip length',
+        )
+      } else {
+        queueIncomingMessage(
+          'expedia',
+          400,
+          1300,
+          makeChoiceCardMessage('hotel-interest', expediaHotelInterestPrompt, ['Yes', 'No']),
+          'Hotel options',
+        )
+      }
+
+      return
+    }
+
+    if (stage === 'trip-length') {
+      const itineraryMessage =
+        option === '2 Days'
+          ? expediaTwoDayItineraryMessage
+          : option === '4 Days'
+            ? expediaFourDayItineraryMessage
+            : expediaThreeDayItineraryMessage
+
+      queueIncomingMessage(
+        'expedia',
+        500,
+        1700,
+        makeTextMessage(itineraryMessage, 'them'),
+        'Suggested Itinerary',
+      )
+      window.setTimeout(() => {
+        queueIncomingMessage(
+          'expedia',
+          400,
+          1300,
+          makeChoiceCardMessage('hotel-interest', expediaHotelInterestPrompt, ['Yes', 'No']),
+          'Hotel options',
+        )
+      }, 1900)
+
+      return
+    }
+
+    if (stage === 'hotel-interest') {
+      if (option === 'Yes') {
+        queueIncomingMessage(
+          'expedia',
+          500,
+          1500,
+          makeCommerceMessage({
+            title: 'Recommended stay for this trip',
+            subtitle: 'Tap to view the hotel details.',
+            items: [expediaCommerceItems[0]],
+          }),
+          'Hotel recommendation',
+        )
+        window.setTimeout(() => {
+          queueExpediaAfterHotelCard()
+        }, 1700)
+      } else {
+        queueIncomingMessage(
+          'expedia',
+          400,
+          1200,
+          makeTextMessage(expediaAnytimeSupportMessage, 'them'),
+          'Trip support',
+        )
+      }
+
+      return
+    }
+
+    if (option === 'Yes') {
+      queueIncomingMessages(
+        'expedia',
+        500,
+        1500,
+        [
+          makeCommerceMessage({
+            title: 'Recommended restaurant for this trip',
+            subtitle: 'Tap to view the dining details.',
+            items: [expediaCommerceItems[1]],
+          }),
+          makeTextMessage(expediaAnytimeSupportMessage, 'them'),
+        ],
+        'Restaurant recommendation',
+      )
+    } else {
+      queueIncomingMessage(
+        'expedia',
+        400,
+        1200,
+        makeTextMessage(expediaAnytimeSupportMessage, 'them'),
+        'Trip support',
+      )
+    }
+  }
+
+  const handleExpediaChoiceSelection = (cardId: string, stage: ExpediaChoiceStage, option: string) => {
+    const hasAvailableCard = conversations.expedia.messages.some(
+      (message) => message.type === 'choice-card' && message.id === cardId && !message.selectedOption,
+    )
+
+    if (!hasAvailableCard) return
+
+    setConversations((current) => {
+      const conversation = current.expedia
+
+      return {
+        ...current,
+        expedia: {
+          ...conversation,
+          status: 'idle',
+          subtitle: option,
+          messages: conversation.messages
+            .map((message) =>
+              message.type === 'choice-card' && message.id === cardId
+                ? { ...message, selectedOption: option }
+                : message,
+            )
+            .concat(makeTextMessage(option, 'me')),
+        },
+      }
+    })
+
+    advanceExpediaChoiceFlow(stage, option)
   }
 
   const requestDeepSeekReply = async (messages: AiChatMessage[]) => {
@@ -1028,86 +1363,9 @@ function App() {
     if (recipientId === 'expedia') {
       const historyMessages = options?.historyMessages ?? conversations[recipientId].messages
       const shouldSendWelcome = !hasExpediaWelcome(historyMessages)
-      const latestSharedVideo = getLatestSharedVideoMessage(historyMessages)
-      const matchingShareCount = countMatchingSharedVideoMessages(historyMessages, latestSharedVideo)
-      const shouldUseFixedShareScript = options?.sharedFromFeed && matchingShareCount === 1
-      const repeatedSharePrompt =
-        latestSharedVideo &&
-        `The user shared the same ${latestSharedVideo.location} video again. Continue helping with this exact destination and keep the advice aligned with the existing itinerary for ${latestSharedVideo.location}.`
 
       if (options?.sharedFromFeed) {
-        if (shouldUseFixedShareScript && shouldSendWelcome) {
-          window.setTimeout(() => {
-            setConversationStatus(recipientId, 'typing', 'Typing...')
-          }, 500)
-
-          window.setTimeout(() => {
-            appendConversationMessage(
-              recipientId,
-              makeTextMessage(expediaFeedWelcomeMessage, 'them'),
-              '✈️ Welcome to Expedia Trip Matching 🏝️',
-            )
-          }, 1800)
-
-          window.setTimeout(() => {
-            setConversationStatus(recipientId, 'typing', 'Typing...')
-          }, 3000)
-
-          window.setTimeout(() => {
-            appendConversationMessage(
-              recipientId,
-              makeTextMessage(expediaTravelBriefMessage, 'them'),
-              'Destination Overview',
-            )
-          }, 4600)
-
-          window.setTimeout(() => {
-            setConversationStatus(recipientId, 'typing', 'Typing...')
-          }, 6200)
-
-          window.setTimeout(() => {
-            appendConversationMessage(
-              recipientId,
-              makeTextMessage(expediaItineraryMessage, 'them'),
-              'Suggested Itinerary',
-            )
-          }, 7800)
-
-          queueCommerceFollowUp(recipientId, 9300, 10900)
-        } else if (shouldUseFixedShareScript) {
-          window.setTimeout(() => {
-            setConversationStatus(recipientId, 'typing', 'Typing...')
-          }, 500)
-
-          window.setTimeout(() => {
-            appendConversationMessage(
-              recipientId,
-              makeTextMessage(expediaTravelBriefMessage, 'them'),
-              'Destination Overview',
-            )
-          }, 2100)
-
-          window.setTimeout(() => {
-            setConversationStatus(recipientId, 'typing', 'Typing...')
-          }, 3400)
-
-          window.setTimeout(() => {
-            appendConversationMessage(
-              recipientId,
-              makeTextMessage(expediaItineraryMessage, 'them'),
-              'Suggested Itinerary',
-            )
-          }, 5000)
-
-          queueCommerceFollowUp(recipientId, 6400, 8000)
-        } else if (options.historyMessages) {
-          void queueAiReply(
-            recipientId,
-            options.historyMessages,
-            options.prompt?.trim() || repeatedSharePrompt || 'Help with this shared destination.',
-          )
-        }
-
+        queueExpediaShareFlow(historyMessages)
         return
       }
 
@@ -1179,6 +1437,38 @@ function App() {
     const trimmedContent = content.trim()
     if (!trimmedContent) return
 
+    if (activeConversationId === 'expedia') {
+      const pendingChoice = getLatestPendingExpediaChoice(conversations.expedia.messages)
+      const matchedOption = pendingChoice
+        ? resolveExpediaChoiceFromText(pendingChoice.stage, trimmedContent)
+        : null
+
+      if (pendingChoice && matchedOption) {
+        setChatDraft('')
+        setConversations((current) => {
+          const conversation = current.expedia
+
+          return {
+            ...current,
+            expedia: {
+              ...conversation,
+              status: 'sending',
+              subtitle: 'Sending...',
+              messages: conversation.messages
+                .map((message) =>
+                  message.type === 'choice-card' && message.id === pendingChoice.id
+                    ? { ...message, selectedOption: matchedOption }
+                    : message,
+                )
+                .concat(makeTextMessage(trimmedContent, 'me')),
+            },
+          }
+        })
+        advanceExpediaChoiceFlow(pendingChoice.stage, matchedOption)
+        return
+      }
+    }
+
     const nextMessages = [...conversations[activeConversationId].messages, makeTextMessage(trimmedContent, 'me')]
     setChatDraft('')
     setConversations((current) => ({
@@ -1205,6 +1495,29 @@ function App() {
   }
 
   const handleBusinessQuickReply = (label: (typeof businessQuickReplies)[number]) => {
+    if (activeConversationId === 'expedia' && label === 'Learn more') {
+      const nextMessages = [...conversations.expedia.messages, makeTextMessage(label, 'me')]
+
+      setConversations((current) => ({
+        ...current,
+        expedia: {
+          ...current.expedia,
+          status: 'sending',
+          subtitle: 'Sending...',
+          messages: nextMessages,
+        },
+      }))
+
+      queueIncomingMessage(
+        'expedia',
+        400,
+        1200,
+        makeTextMessage(expediaWelcomeMessage, 'them'),
+        '✈️ Welcome to Expedia Trip Matching 🏝️',
+      )
+      return
+    }
+
     sendChatMessage(label)
   }
 
@@ -1374,6 +1687,51 @@ function App() {
             </button>
           ))}
         </div>
+      </div>
+    </article>
+  )
+
+  const renderChoiceCardMessage = (message: Extract<Message, { type: 'choice-card' }>) => (
+    <article key={message.id} className="message-row theirs">
+      <div
+        className={
+          message.selectedOption
+            ? 'bubble bubble-them bubble-choice-question'
+            : message.display === 'text'
+              ? 'bubble bubble-them bubble-choice-text'
+              : 'bubble bubble-choice-card'
+        }
+      >
+        {message.selectedOption ? (
+          <p className="choice-question-text">{message.prompt}</p>
+        ) : (
+          <div className={message.display === 'text' ? 'choice-text-group' : 'choice-card'}>
+            <p className={message.display === 'text' ? 'choice-question-text' : 'choice-card-prompt'}>
+              {message.prompt}
+            </p>
+            <div className={message.display === 'text' ? 'choice-text-options' : 'choice-card-options'}>
+              {message.options.map((option) => {
+                const isSelected = message.selectedOption === option
+
+                return (
+                  <button
+                    key={`${message.id}-${option}`}
+                    type="button"
+                    className={
+                      message.display === 'text'
+                        ? `choice-text-option ${isSelected ? 'is-selected' : ''}`
+                        : `choice-card-option ${isSelected ? 'is-selected' : ''}`
+                    }
+                    disabled={Boolean(message.selectedOption)}
+                    onClick={() => handleExpediaChoiceSelection(message.id, message.stage, option)}
+                  >
+                    {option}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   )
@@ -2371,6 +2729,10 @@ function App() {
                       return renderCommerceMessage(message)
                     }
 
+                    if (message.type === 'choice-card') {
+                      return renderChoiceCardMessage(message)
+                    }
+
                     if (message.type === 'text') {
                       return (
                         <article
@@ -2661,6 +3023,10 @@ function App() {
 
                       if (message.type === 'commerce-group') {
                         return renderCommerceMessage(message)
+                      }
+
+                      if (message.type === 'choice-card') {
+                        return renderChoiceCardMessage(message)
                       }
 
                       if (message.type === 'text') {
